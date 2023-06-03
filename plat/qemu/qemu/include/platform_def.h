@@ -160,6 +160,7 @@
 #if ENABLE_RME
 #define RMM_BASE		(0x0f000000)
 #define RMM_SIZE        UL(0x100000)
+// #define RMM_SIZE        UL(0x02000000) 
 #define RMM_LIMIT		(RMM_BASE + RMM_SIZE)
 
 #define RMM_CODE_BASE (BL_CODE_BASE)

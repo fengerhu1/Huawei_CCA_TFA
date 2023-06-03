@@ -21,6 +21,14 @@
 #define RMI_FNUM_MIN_VALUE	U(0x150)
 #define RMI_FNUM_MAX_VALUE	U(0x18F)
 
+/* Construct RMI fastcall std FID from offset */
+#define SMC64_RMI_FID(_offset)					  \
+	((SMC_TYPE_FAST << FUNCID_TYPE_SHIFT)			| \
+	 (SMC_64 << FUNCID_CC_SHIFT)				| \
+	 (OEN_STD_START << FUNCID_OEN_SHIFT)			| \
+	 (((RMI_FNUM_MIN_VALUE + (_offset)) & FUNCID_NUM_MASK)	  \
+	  << FUNCID_NUM_SHIFT))
+
 #define is_rmi_fid(fid) __extension__ ({		\
 	__typeof__(fid) _fid = (fid);			\
 	((GET_SMC_NUM(_fid) >= RMI_FNUM_MIN_VALUE) &&	\
@@ -49,6 +57,14 @@
  */
 #define RMMD_EL3_FNUM_MIN_VALUE		U(0x1B0)
 #define RMMD_EL3_FNUM_MAX_VALUE		U(0x1CF)
+
+/* Construct RMM_EL3 fastcall std FID from offset */
+#define SMC64_RMMD_EL3_FID(_offset)					  \
+	((SMC_TYPE_FAST << FUNCID_TYPE_SHIFT)				| \
+	 (SMC_64 << FUNCID_CC_SHIFT)					| \
+	 (OEN_STD_START << FUNCID_OEN_SHIFT)				| \
+	 (((RMMD_EL3_FNUM_MIN_VALUE + (_offset)) & FUNCID_NUM_MASK)	  \
+	  << FUNCID_NUM_SHIFT))
 
 /* The macros below are used to identify GTSI calls from the SMC function ID */
 #define is_rmmd_el3_fid(fid) __extension__ ({		\
@@ -114,6 +130,37 @@
 
 /* ECC Curve types for attest key generation */
 #define ATTEST_KEY_CURVE_ECC_SECP384R1		0
+
+/*
+ * RMM_BOOT_COMPLETE originates on RMM when the boot finishes (either cold
+ * or warm boot). This is handled by the RMM-EL3 interface SMC handler.
+ *
+ * RMM_BOOT_COMPLETE FID is located at the end of the available range.
+ */
+					 /* 0x1CF */
+#define RMM_BOOT_COMPLETE		SMC64_RMMD_EL3_FID(U(0x1F))
+
+/*
+ * The major version number of the RMM Boot Interface implementation.
+ * Increase this whenever the semantics of the boot arguments change making it
+ * backwards incompatible.
+ */
+#define RMM_EL3_IFC_VERSION_MAJOR	(U(0))
+
+/*
+ * The minor version number of the RMM Boot Interface implementation.
+ * Increase this when a bug is fixed, or a feature is added without
+ * breaking compatibility.
+ */
+#define RMM_EL3_IFC_VERSION_MINOR	(U(1))
+
+#define RMM_EL3_INTERFACE_VERSION				\
+	(((RMM_EL3_IFC_VERSION_MAJOR << 16) & 0x7FFFF) |	\
+		RMM_EL3_IFC_VERSION_MINOR)
+
+#define RMM_EL3_IFC_VERSION_GET_MAJOR(_version) (((_version) >> 16) \
+								& 0x7FFF)
+#define RMM_EL3_IFC_VERSION_GET_MAJOR_MINOR(_version) ((_version) & 0xFFFF)
 
 
 #ifndef __ASSEMBLER__

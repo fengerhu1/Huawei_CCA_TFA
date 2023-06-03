@@ -79,17 +79,19 @@ trp_head:
 
 	bl	trp_setup
 
+	/* Set the exception vectors */
+	ldr	x0, =el2_vectors
+	msr	vbar_el2, x0
+
 	bl	trp_main
 
 warm_boot:
 	/* Set the exception vectors */
-	adr x0, rmm_vector
-	msr vbar_el2, x0
-
+	ldr	x0, =el2_vectors
+	msr	vbar_el2, x0
 	bl 	trp_enable_mmu
-	__init_el2_gicv3
-	__init_el2_timers
-	__init_el2_hstr
+	bl  virt_secondary_init
+	
 	mov_imm	x0, RMMD_RMI_REQ_COMPLETE
 	mov	x1, xzr
 	smc	#0

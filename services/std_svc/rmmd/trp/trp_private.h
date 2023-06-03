@@ -30,6 +30,7 @@
 #include <assert.h>
 #include <lib/xlat_tables/xlat_tables_v2.h>
 #include <lib/el3_runtime/aarch64/context.h>
+#include <services/rmmd_svc.h>
 #include "vgic-v3.h"
 
 #define rmm_err(fmt, ...) \
@@ -180,33 +181,141 @@ typedef struct rmm_rec {
 #define RMI_FNUM_DATA_CREATE_UNKNOWN_LEVEL U(0x169)
 #define RMI_FNUM_DATA_DESTROY_LEVEL    U(0x16A)
 
-#define RMI_RMM_REQ_VERSION		        RMM_FID(SMC_64, RMI_FNUM_VERSION_REQ)
-#define RMI_RMM_GRANULE_DELEGATE	    RMM_FID(SMC_64, RMI_FNUM_GRANULE_DELEGATE)
-#define RMI_RMM_GRANULE_UNDELEGATE	    RMM_FID(SMC_64, RMI_FNUM_GRANULE_UNDELEGATE)
-#define RMI_RMM_DATA_CREATE             RMM_FID(SMC_64, RMI_FNUM_DATA_CREATE)
-#define RMI_RMM_DATA_CREATE_UNKNOWN     RMM_FID(SMC_64, RMI_FNUM_DATA_CREATE_UNKNOWN)
-#define RMI_RMM_DATA_DESTROY            RMM_FID(SMC_64, RMI_FNUM_DATA_DESTROY)
-#define RMI_RMM_DATA_DISPOSE            RMM_FID(SMC_64, RMI_FNUM_DATA_DISPOSE)
-#define RMI_RMM_REALM_ACTIVATE          RMM_FID(SMC_64, RMI_FNUM_REALM_ACTIVATE)
-#define RMI_RMM_REALM_CREATE            RMM_FID(SMC_64, RMI_FNUM_REALM_CREATE)
-#define RMI_RMM_REALM_DESTROY           RMM_FID(SMC_64, RMI_FNUM_REALM_DESTROY)
-#define RMI_RMM_REC_CREATE              RMM_FID(SMC_64, RMI_FNUM_REC_CREATE)
-#define RMI_RMM_REC_DESTROY             RMM_FID(SMC_64, RMI_FNUM_REC_DESTROY)
-#define RMI_RMM_REC_ENTER               RMM_FID(SMC_64, RMI_FNUM_REC_ENTER)
-#define RMI_RMM_RTT_CREATE              RMM_FID(SMC_64, RMI_FNUM_RTT_CREATE)
-#define RMI_RMM_RTT_DESTROY             RMM_FID(SMC_64, RMI_FNUM_RTT_DESTROY)
-#define RMI_RMM_RTT_MAP_UNPROTECTED     RMM_FID(SMC_64, RMI_FNUM_RTT_MAP_UNPROTECTED)
-#define RMI_RMM_RTT_MAP_PROTECTED       RMM_FID(SMC_64, RMI_FNUM_RTT_MAP_PROTECTED)
-#define RMI_RMM_RTT_READ_ENTRY          RMM_FID(SMC_64, RMI_FNUM_RTT_READ_ENTRY)
-#define RMI_RMM_RTT_UNMAP_UNPROTECTED   RMM_FID(SMC_64, RMI_FNUM_RTT_UNMAP_UNPROTECTED)
-#define RMI_RMM_RTT_UNMAP_PROTECTED     RMM_FID(SMC_64, RMI_FNUM_RTT_UNMAP_PROTECTED)
-#define RMI_RMM_PSCI_COMPLETE           RMM_FID(SMC_64, RMI_FNUM_PSCI_COMPLETE)
-#define RMI_RMM_FEATURES                RMM_FID(SMC_64, RMI_FNUM_FEATURES)
-#define RMI_RMM_RTT_FOLD                RMM_FID(SMC_64, RMI_FNUM_RTT_FOLD)
-#define RMI_RMM_REC_AUX_COUNT           RMM_FID(SMC_64, RMI_FNUM_REC_AUX_COUNT)
-#define RMI_RMM_DATA_CREATE_LEVEL       RMM_FID(SMC_64, RMI_FNUM_DATA_CREATE_LEVEL)
-#define RMI_RMM_DATA_CREATE_UNKNOWN_LEVEL RMM_FID(SMC_64, RMI_FNUM_DATA_CREATE_UNKNOWN_LEVEL)
-#define RMI_RMM_DATA_DESTROY_LEVEL      RMM_FID(SMC_64, RMI_FNUM_DATA_DESTROY_LEVEL)
+// #define RMI_RMM_REQ_VERSION		        RMM_FID(SMC_64, RMI_FNUM_VERSION_REQ)
+// #define RMI_RMM_GRANULE_DELEGATE	    RMM_FID(SMC_64, RMI_FNUM_GRANULE_DELEGATE)
+// #define RMI_RMM_GRANULE_UNDELEGATE	    RMM_FID(SMC_64, RMI_FNUM_GRANULE_UNDELEGATE)
+// #define RMI_RMM_DATA_CREATE             RMM_FID(SMC_64, RMI_FNUM_DATA_CREATE)
+// #define RMI_RMM_DATA_CREATE_UNKNOWN     RMM_FID(SMC_64, RMI_FNUM_DATA_CREATE_UNKNOWN)
+// #define RMI_RMM_DATA_DESTROY            RMM_FID(SMC_64, RMI_FNUM_DATA_DESTROY)
+// #define RMI_RMM_DATA_DISPOSE            RMM_FID(SMC_64, RMI_FNUM_DATA_DISPOSE)
+// #define RMI_RMM_REALM_ACTIVATE          RMM_FID(SMC_64, RMI_FNUM_REALM_ACTIVATE)
+// #define RMI_RMM_REALM_CREATE            RMM_FID(SMC_64, RMI_FNUM_REALM_CREATE)
+// #define RMI_RMM_REALM_DESTROY           RMM_FID(SMC_64, RMI_FNUM_REALM_DESTROY)
+// #define RMI_RMM_REC_CREATE              RMM_FID(SMC_64, RMI_FNUM_REC_CREATE)
+// #define RMI_RMM_REC_DESTROY             RMM_FID(SMC_64, RMI_FNUM_REC_DESTROY)
+// #define RMI_RMM_REC_ENTER               RMM_FID(SMC_64, RMI_FNUM_REC_ENTER)
+// #define RMI_RMM_RTT_CREATE              RMM_FID(SMC_64, RMI_FNUM_RTT_CREATE)
+// #define RMI_RMM_RTT_DESTROY             RMM_FID(SMC_64, RMI_FNUM_RTT_DESTROY)
+// #define RMI_RMM_RTT_MAP_UNPROTECTED     RMM_FID(SMC_64, RMI_FNUM_RTT_MAP_UNPROTECTED)
+// #define RMI_RMM_RTT_MAP_PROTECTED       RMM_FID(SMC_64, RMI_FNUM_RTT_MAP_PROTECTED)
+// #define RMI_RMM_RTT_READ_ENTRY          RMM_FID(SMC_64, RMI_FNUM_RTT_READ_ENTRY)
+// #define RMI_RMM_RTT_UNMAP_UNPROTECTED   RMM_FID(SMC_64, RMI_FNUM_RTT_UNMAP_UNPROTECTED)
+// #define RMI_RMM_RTT_UNMAP_PROTECTED     RMM_FID(SMC_64, RMI_FNUM_RTT_UNMAP_PROTECTED)
+// #define RMI_RMM_PSCI_COMPLETE           RMM_FID(SMC_64, RMI_FNUM_PSCI_COMPLETE)
+// #define RMI_RMM_FEATURES                RMM_FID(SMC_64, RMI_FNUM_FEATURES)
+// #define RMI_RMM_RTT_FOLD                RMM_FID(SMC_64, RMI_FNUM_RTT_FOLD)
+// #define RMI_RMM_REC_AUX_COUNT           RMM_FID(SMC_64, RMI_FNUM_REC_AUX_COUNT)
+// #define RMI_RMM_DATA_CREATE_LEVEL       RMM_FID(SMC_64, RMI_FNUM_DATA_CREATE_LEVEL)
+// #define RMI_RMM_DATA_CREATE_UNKNOWN_LEVEL RMM_FID(SMC_64, RMI_FNUM_DATA_CREATE_UNKNOWN_LEVEL)
+// #define RMI_RMM_DATA_DESTROY_LEVEL      RMM_FID(SMC_64, RMI_FNUM_DATA_DESTROY_LEVEL)
+
+/* RMI SMC64 FIDs handled by the TRP */
+#define RMI_RMM_REQ_VERSION		SMC64_RMI_FID(U(0))
+#define RMI_RMM_GRANULE_DELEGATE	SMC64_RMI_FID(U(1))
+#define RMI_RMM_GRANULE_UNDELEGATE	SMC64_RMI_FID(U(2))
+#define RMI_RMM_REALM_CREATE	SMC64_RMI_FID(U(3))
+#define RMI_RMM_REALM_DESTROY	SMC64_RMI_FID(U(4))
+/*
+ * arg0 == RD address
+ */
+#define RMI_RMM_REALM_ACTIVATE		SMC64_RMI_FID(U(5))
+
+/*
+ * arg0 == REC address
+ * arg1 == RD address
+ * arg2 == MPIDR_EL1 value
+ * arg3 == struct rmm_rec address
+ */
+#define RMI_RMM_REC_CREATE		SMC64_RMI_FID(U(6))
+
+/*
+ * arg0 == REC address
+ */
+#define RMI_RMM_REC_DESTROY		SMC64_RMI_FID(U(7))
+
+/*
+ * arg0 == data address
+ * arg1 == RD address
+ * arg2 == SRC address
+ * arg3 == map address
+ */
+#define RMI_RMM_DATA_CREATE		SMC64_RMI_FID(U(8))
+
+/*
+ * arg0 == map address
+ * arg1 == RD address
+ */
+#define RMI_RMM_DATA_DESTROY		SMC64_RMI_FID(U(9))
+
+/*
+ * arg0 == table address
+ * arg1 == RD address
+ * arg2 == map address
+ * arg3 == level
+ */
+#define RMI_RMM_TABLE_CREATE		SMC64_RMI_FID(U(10))
+
+/*
+ * arg0 == table address
+ * arg1 == RD address
+ * arg2 == map address
+ * arg3 == level
+ */
+#define RMI_RMM_TABLE_DESTROY		SMC64_RMI_FID(U(11))
+
+/*
+ * arg0 == rec address
+ * arg1 == rec_run address
+ */
+#define RMI_RMM_REC_RUN			SMC64_RMI_FID(U(12))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ */
+#define RMI_RMM_DATA_MAP		SMC64_RMI_FID(U(13))
+
+/*
+ * arg0 == RD address
+ * arg1 == map address
+ */
+#define RMI_RMM_DATA_UNMAP		SMC64_RMI_FID(U(14))
+
+
+/*
+ * arg0 == RD address
+ * arg1 == INTID
+ */
+#define RMI_RMM_INTERRUPT_SIGNAL	SMC64_RMI_FID(U(15))
+
+/*
+ * arg0 == data address
+ * arg1 == RD address
+ * arg2 == map address
+ */
+#define RMI_RMM_DATA_CREATE_UNKNOWN	SMC64_RMI_FID(U(16))
+
+/*
+ * arg0 == RD
+ * arg1 == REC
+ */
+#define RMI_RMM_DATA_DISPOSE		SMC64_RMI_FID(U(17))
+
+/*
+ * arg0 == ns address
+ * arg1 == RD address
+ * arg2 == map address
+ */
+#define RMI_RMM_MAP_NS			SMC64_RMI_FID(U(18))
+
+/*
+ * arg0 == ns address
+ * arg1 == RD address
+ * arg2 == map address
+ */
+#define RMI_RMM_UNMAP_NS		SMC64_RMI_FID(U(19))
+
+#define RMI_RMM_NUM_CALLS		SMC64_RMI_FID(U(20))
 
 /* Definitions for RMI VERSION */
 #define RMI_ABI_VERSION_MAJOR		U(0x0)
