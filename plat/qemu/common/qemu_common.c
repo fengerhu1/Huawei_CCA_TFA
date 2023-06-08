@@ -167,6 +167,79 @@ static const mmap_region_t plat_qemu_mmap[] = {
 #endif
 
 /*******************************************************************************
+ * Macro generating the code for the function setting up the pagetables as per
+ * the platform memory map & initialize the mmu, for the given exception level
+ ******************************************************************************/
+
+#define DEFINE_CONFIGURE_MMU_EL(_el)					\
+	void qemu_configure_mmu_##_el(unsigned long total_base,	\
+				   unsigned long total_size,		\
+				   unsigned long code_start,		\
+				   unsigned long code_limit,		\
+				   unsigned long ro_start,		\
+				   unsigned long ro_limit,		\
+				   unsigned long coh_start,		\
+				   unsigned long coh_limit)		\
+	{								\
+		mmap_add_region(total_base, total_base,			\
+				total_size,				\
+				MT_MEMORY | MT_RW | MT_IMAGE_PAS);		\
+		mmap_add_region(code_start, code_start,			\
+				code_limit - code_start,		\
+				MT_CODE | MT_IMAGE_PAS);			\
+		mmap_add_region(ro_start, ro_start,			\
+				ro_limit - ro_start,			\
+				MT_RO_DATA | MT_IMAGE_PAS);		\
+		mmap_add_region(coh_start, coh_start,			\
+				coh_limit - coh_start,			\
+				MT_DEVICE | MT_RW | MT_IMAGE_PAS);		\
+		mmap_add(plat_qemu_mmap);				\
+		init_xlat_tables();					\
+									\
+		enable_mmu_##_el(0);					\
+	}
+
+void qemu_configure_mmu_el2(unsigned long total_base,	
+				   unsigned long total_size,		
+				   unsigned long code_start,		
+				   unsigned long code_limit,		
+				   unsigned long ro_start,		
+				   unsigned long ro_limit,		
+				   unsigned long coh_start,		
+				   unsigned long coh_limit)		
+{								
+	NOTICE("total_base %lx total_size %lx code_start %lx code_limit %lx ro_start %lx ro_limit %lx coh_start %lx coh_limit %lx\r\n",
+			total_base, total_size, code_start, code_limit, ro_start, ro_limit, coh_start, coh_limit);
+	NOTICE("MT_IMAGE_PAS %d MT_REALM %d\n", MT_IMAGE_PAS, MT_REALM);
+	mmap_add_region(total_base, total_base,			
+			total_size,				
+			MT_MEMORY | MT_RW | MT_IMAGE_PAS);		
+	mmap_add_region(code_start, code_start,			
+			code_limit - code_start,		
+			MT_CODE | MT_IMAGE_PAS);			
+	mmap_add_region(ro_start, ro_start,			
+			ro_limit - ro_start,			
+			MT_RO_DATA | MT_IMAGE_PAS);		
+	mmap_add_region(coh_start, coh_start,			
+			coh_limit - coh_start,			
+			MT_DEVICE | MT_RW | MT_IMAGE_PAS);		
+	mmap_add(plat_qemu_mmap);				
+	init_xlat_tables();
+
+	enable_mmu_el2(0);					
+}
+
+
+/* Define EL1 and EL3 variants of the function initialising the MMU */
+#ifdef __aarch64__
+DEFINE_CONFIGURE_MMU_EL(el1)
+// DEFINE_CONFIGURE_MMU_EL(el2)
+DEFINE_CONFIGURE_MMU_EL(el3)
+#else
+DEFINE_CONFIGURE_MMU_EL(svc_mon)
+#endif
+
+/*******************************************************************************
  * Returns QEMU platform specific memory map regions.
  ******************************************************************************/
 const mmap_region_t *plat_qemu_get_mmap(void)

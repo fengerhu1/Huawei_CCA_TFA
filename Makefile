@@ -645,7 +645,7 @@ endif
 ifeq ($(SPMC_AT_EL3),1)
 	$(error SPMC_AT_EL3 and ENABLE_RME cannot both be enabled.)
 endif
-include services/std_svc/rmmd/rmmd.mk
+include services/std_svc/rmm_monitor/rmmd.mk
 $(warning "RME is an experimental feature")
 endif
 

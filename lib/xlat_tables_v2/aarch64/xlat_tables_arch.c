@@ -244,6 +244,13 @@ unsigned int xlat_arch_current_el(void)
 	return el;
 }
 
+#define PGD_SHIFT   39
+#define PUD_SHIFT   30
+#define PMD_SHIFT   21
+#define PTE_SHIFT   12
+#define PTRS_PER_LEVEL  512
+#define RMM_MAP_MEMORY_RANGE 0xf000000
+
 void setup_mmu_cfg(uint64_t *params, unsigned int flags,
 		   const uint64_t *base_table, unsigned long long max_pa,
 		   uintptr_t max_va, int xlat_regime)
@@ -321,4 +328,32 @@ void setup_mmu_cfg(uint64_t *params, unsigned int flags,
 	params[MMU_CFG_MAIR] = mair;
 	params[MMU_CFG_TCR] = tcr;
 	params[MMU_CFG_TTBR0] = ttbr0;
+
+	unsigned long tcr_el2_value;
+    asm volatile("mrs %0, tcr_el2" : "=r" (tcr_el2_value));
+	tcr_el2_value = tcr;
+    NOTICE("[qemu_configure_mmu_el2] tcr_el2 test %lx t0sz %d\r\n", tcr_el2_value, t0sz);
+
+    unsigned long sctlr_el2_value;
+    asm volatile("mrs %0, sctlr_el2" : "=r" (sctlr_el2_value));
+
+    unsigned long* ttbr0_el2_value = (unsigned long *)ttbr0;
+    // asm volatile("mrs %0, ttbr0_el2" : "=r" (ttbr0_el2_value));
+    NOTICE("[qemu_configure_mmu_el2] sctlr_el2 %lx ttbr0_el2_value %lx\r\n", (unsigned long)sctlr_el2_value, (unsigned long)ttbr0_el2_value);
+    ttbr0_el2_value = (unsigned long *)((unsigned long)ttbr0_el2_value & 0xfffffffffffffffe);
+    NOTICE("[qemu_configure_mmu_el2] sctlr_el2 %lx ttbr0_el2_value %lx\r\n", (unsigned long)sctlr_el2_value, (unsigned long)ttbr0_el2_value);			
+	unsigned long va = RMM_MAP_MEMORY_RANGE;
+    unsigned long pud_index = (va >> PUD_SHIFT) & (PTRS_PER_LEVEL - 1);
+    unsigned long pmd_index = (va >> PMD_SHIFT) & (PTRS_PER_LEVEL - 1);
+    unsigned long pte_index = (va >> PTE_SHIFT) & (PTRS_PER_LEVEL - 1);
+	NOTICE("[qemu_configure_mmu_el2] pud_index %lx pmd_index %lx pte_index %lx\n", (unsigned long)pud_index, (unsigned long)pmd_index, (unsigned long)pte_index);
+    NOTICE("[qemu_configure_mmu_el2] ttbr0 index %lx pud entry %lx\n", (unsigned long)pud_index, (unsigned long)ttbr0_el2_value[pud_index]);
+	unsigned long *pud_ptr = (unsigned long *) (((ttbr0_el2_value[pud_index] >> 12) & 0x0fffffffff) << 12);
+	NOTICE("[qemu_configure_mmu_el2] pmd index %lx pmd entry %lx\n", (unsigned long)pmd_index, (unsigned long)pud_ptr[pmd_index]);
+	if ((((unsigned long)pud_ptr[pmd_index]) & 0b11) == 0b01) {
+		NOTICE("[qemu_configure_mmu_el2] block address %lx \n", ((pud_ptr[pmd_index] >> 12) & 0x0fffffffff) << 12);
+	} else {
+		unsigned long *pmd_ptr = (unsigned long *) (((pud_ptr[pmd_index] >> 12) & 0x0fffffffff) << 12);
+		NOTICE("[qemu_configure_mmu_el2] pte index %lx pte entry %lx\n", (unsigned long)pte_index, (unsigned long)pmd_ptr[pte_index]);
+	}
 }

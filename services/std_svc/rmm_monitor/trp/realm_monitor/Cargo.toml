@@ -1,0 +1,35 @@
+[package]
+name = "realm_monitor"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+modular-bitfield = "0.6.0"
+bit_field = "0.10.1"
+# https://crates.io/crates/spinning_top
+spinning_top = "0.2.4"
+lock_api = "=0.4.8"
+# alloc-cortex-m = "0.4.2"
+lazy_static = { version = "1.4", features = ["spin_no_std"] }
+spin = "0.5"
+linked_list_allocator = "0.9.1"
+log = "0.4.17"
+sha2 = { version = "0.10", default-features = false }
+# [target.'cfg(target_os = "linux")'.dependencies]
+# ring = "0.16.20"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+debug = true
+# debug-assertions = true
+# codegen-units = 1
+opt-level = 1 
+#lto = true
