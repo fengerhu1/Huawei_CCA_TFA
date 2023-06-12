@@ -86,7 +86,7 @@ trp_head:
 	mov	x1, x21
 	mov	x2, x22
 	mov	x3, x23
-	bl	trp_setup_qemu
+	bl	trp_setup
 	bl	trp_main
 	/* set error handler */
 	ldr	x0, =el2_vectors
@@ -112,8 +112,8 @@ warm_boot:
 	bl print_sp
 	ldr	x0, =el2_vectors
 	msr	vbar_el2, x0
-	# bl mm_secondary_init
-	bl 	trp_enable_mmu
+	bl mm_secondary_init
+	# bl 	trp_enable_mmu
 	bl virt_secondary_init
 	mov_imm	x0, RMM_BOOT_COMPLETE
 	mov	x1, xzr /* RMM_BOOT_SUCCESS */

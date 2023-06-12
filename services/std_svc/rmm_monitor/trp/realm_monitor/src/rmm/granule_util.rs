@@ -5,7 +5,7 @@ pub const SZ_512M: usize = (1)<<29;
 // FIXME: resize the stack size
 // pub const MEM0_SIZE: usize = SZ_2G;
 // For Linux
-pub const MEM0_SIZE: usize = SZ_512M/512/128;
+pub const MEM0_SIZE: usize = SZ_512M*4/2;
 // For TF-A-TEST
 // pub const MEM0_SIZE: usize = SZ_512M*2;
 pub const GRANULE_SIZE: usize = SZ_4K;

@@ -58,6 +58,7 @@ static void initialize_boot_page_table(void) {
 
     // TODO:
     // Currently, we only map 32GB memory
+    // Map [0~4GB] memory using the 1GB block
     for (i = GET_L1_INDEX(0); i < GET_L1_INDEX(RMM_MAP_MEMORY_RANGE); i++) {
         _boot_pt_l1_0[i] = (i << HP_1G_BLOCK_SHIFT)
             | BIT(10)	/* bit[10]: access flag */
@@ -69,22 +70,34 @@ static void initialize_boot_page_table(void) {
             | BIT(0);	/* bit[0]: valid */
     }
 
-    for (i = GET_L1_INDEX(2*RMM_MAP_MEMORY_RANGE); i < GET_L1_INDEX(3*RMM_MAP_MEMORY_RANGE); i++) {
-        _boot_pt_l1_0[i] = ((i-GET_L1_INDEX(2*RMM_MAP_MEMORY_RANGE)) << HP_1G_BLOCK_SHIFT)
-            | BIT(10)	/* bit[10]: access flag */
-            | (3 << 8)  /* bit[9-8]: inner shareable */
-                        /* bit[7-6] data access permission bit */
-            | (1 << 5)  /* bit[5] non-secure bit */
-            | (4 << 2)	/* bit[4-2]: MT_NORMAL */
-                        /* bit[1]: block (0) table (1) */
-            | BIT(0);	/* bit[0]: valid */
-    }
+    // for (i = GET_L1_INDEX(2*RMM_MAP_MEMORY_RANGE); i < GET_L1_INDEX(3*RMM_MAP_MEMORY_RANGE); i++) {
+    //     _boot_pt_l1_0[i] = ((i-GET_L1_INDEX(2*RMM_MAP_MEMORY_RANGE)) << HP_1G_BLOCK_SHIFT)
+    //         | BIT(10)	/* bit[10]: access flag */
+    //         | (3 << 8)  /* bit[9-8]: inner shareable */
+    //                     /* bit[7-6] data access permission bit */
+    //         | (0 << 5)  /* bit[5] non-secure bit */
+    //         | (4 << 2)	/* bit[4-2]: MT_NORMAL */
+    //                     /* bit[1]: block (0) table (1) */
+    //         | BIT(0);	/* bit[0]: valid */
+    // }
 
     /* FIXME: map for the temporary page */
     _boot_pt_l1_0[0] = ((uintptr_t) _boot_pt_l2_1) | BIT(1) | BIT(0);
     _boot_pt_l1_0[GET_L1_INDEX(RMM_MAP_MEMORY_RANGE)] = ((uintptr_t) _boot_pt_l2_0) | BIT(1) | BIT(0);
     _boot_pt_l2_0[0] = ((uintptr_t) pgtable_l3) | BIT(1) | BIT(0);
     /* End */
+
+    // Remap [0~1GB] memory using the 3MB block
+    for (i = 0; i < 512; i++) {
+        _boot_pt_l2_1[i] = (i << HP_2M_BLOCK_SHIFT)
+            | BIT(10)	/* bit[10]: access flag */
+            | (3 << 8)  /* bit[9-8]: inner shareable */
+                        /* bit[7-6] data access permission bit */
+            | (0 << 5)  /* bit[5] non-secure bit */
+            | (4 << 2)	/* bit[4-2]: MT_NORMAL */
+                        /* bit[1]: block (0) table (1) */
+            | BIT(0);	/* bit[0]: valid */
+    }
 
     // for uart 0x1c0a0000
     j = GET_L2_INDEX(0x1c000000);
@@ -155,7 +168,7 @@ void mm_primary_init_qemu(void) {
 }
 
 void mm_primary_init(void) {
-    mm_primary_init_qemu();
+    mm_primary_init_tfa();
 }
 
 int tmp = 0;
