@@ -413,14 +413,14 @@ pub fn init_common_sysregs(rec: &mut Rec, rd: &mut Rd) {
 	//TODO:RMIAux.c 55
 	rec.common_sysregs.vtcr_el2 = VTCR_FLAGS;
 	//find the physical address of the g_table
-	// let addr =  MEM0_PHYS + (rd.g_table.id as usize * GRANULE_SIZE);
-	let addr; // For Linux
-    if (rd.g_table.id as usize) > (NR_GRANULES/2) {
-        addr = MEM1_PHYS + ((rd.g_table.id as usize)-(NR_GRANULES/2))*GRANULE_SIZE;
-    }
-    else {// For tf-a-test
-        addr =  MEM0_PHYS + ((rd.g_table.id as usize * GRANULE_SIZE) );
-    }
+	let addr =  MEM0_PHYS + (rd.g_table.id as usize * GRANULE_SIZE);
+	// let addr; // For Linux
+    // if (rd.g_table.id as usize) > (NR_GRANULES/2) {
+    //     addr = MEM1_PHYS + ((rd.g_table.id as usize)-(NR_GRANULES/2))*GRANULE_SIZE;
+    // }
+    // else {// For tf-a-test
+    //     addr =  MEM0_PHYS + ((rd.g_table.id as usize * GRANULE_SIZE) );
+    // }
 	//ignore the last bit of address and retrieve [47:1] bits
 	rec.common_sysregs.vttbr_el2 = addr & crate::MASK!(TTBRx_EL2_BADDR_WIDTH, TTBRx_EL2_BADDR_SHIFT);
 }
@@ -855,7 +855,9 @@ pub fn handle_excpetion_irq_lel(rec: &mut Rec) -> bool {
 	// 	return true;
 	// }
 	else {
-		crate::println!("Debug: handle_excpetion_irq_lel: cannot hanle such irq request {:x}", intid);
+		if intid != 0x1a {
+			crate::println!("Debug: handle_excpetion_irq_lel: cannot hanle such irq request {:x}", intid);
+		}
 		set_rec_run_exit_reason(EXIT_REASON_IRQ);
 		return false;
 	}
@@ -872,7 +874,7 @@ pub fn handle_realm_exit(rec: &mut Rec, realm_exception_code: u32, first_loop: b
 			// crate::println!("Debug: handle_realm_exit: ARM_EXCEPTION_SYNC_LEL");
 			return handle_exception_sync(rec);
 		} else if realm_exception_code == ARM_EXCEPTION_IRQ_LEL {
-			crate::println!("Debug: handle_realm_exit: ARM_EXCEPTION_IRQ_LEL");
+			// crate::println!("Debug: handle_realm_exit: ARM_EXCEPTION_IRQ_LEL");
 			return handle_excpetion_irq_lel(rec);}
 		else if realm_exception_code == ARM_EXCEPTION_FIQ_LEL {
 			crate::println!("Debug: handle_realm_exit: ARM_EXCEPTION_FIQ_LEL");

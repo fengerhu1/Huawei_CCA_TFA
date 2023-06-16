@@ -6,10 +6,16 @@ use spinning_top::Spinlock;
 use crate::io::{self, ConsoleWriter, Error, ErrorKind, Result, Write};
 
 const V2M_OFFSET: usize = 0;
-const V2M_IOFPGA_UART3_BASE: usize = V2M_OFFSET + 0x1c0c0000usize;
+// For TFA
+// const V2M_IOFPGA_UART3_BASE: usize = V2M_OFFSET + 0x1c0c0000usize;
+// For qemu
+const V2M_IOFPGA_UART3_BASE: usize = V2M_OFFSET + 0x9000000usize;
 
 const BASE: usize = V2M_IOFPGA_UART3_BASE;
-const CLK_IN_HZ: usize = 24000000;
+// For TFA
+// const CLK_IN_HZ: usize = 24000000;
+// For qemu
+const CLK_IN_HZ: usize = 0x1;
 const BAUDRATE: usize = 115200;
 
 const REG_LEN: isize = core::mem::size_of::<u32>() as isize;
@@ -87,7 +93,7 @@ impl DeviceInner {
     pub fn putc(&mut self, byte: u8) -> Result<()> {
         if self.ready {
             unsafe {
-                while self.register.offset(UARTFR).read_volatile() & UARTFR_TXFF_BIT == 0 {}
+                // while self.register.offset(UARTFR).read_volatile() & UARTFR_TXFF_BIT == 0 {}
                 self.register.offset(UARTDR).write_volatile(byte as u32);
             }
             Ok(())
@@ -104,6 +110,7 @@ impl io::Device for DeviceInner {
 
     fn initialize(&mut self) -> Result<()> {
         if !self.ready {
+            // crate::rmm_println!("initialize 1");
             unsafe {
                 //Disable uart before programming
                 self.register.offset(UARTCR).write_volatile(
@@ -130,7 +137,7 @@ impl io::Device for DeviceInner {
                     .write_volatile(UARTCR::RXE as u32 | UARTCR::TXE as u32 | UARTCR::EN as u32);
             }
             self.ready = true;
-
+            // crate::rmm_println!("initialize 2");
             Ok(())
         } else {
             Err(Error::new(ErrorKind::AlreadyExists))
@@ -140,13 +147,16 @@ impl io::Device for DeviceInner {
 
 impl Write for DeviceInner {
     fn write_all(&mut self, buf: &[u8]) -> Result<()> {
+        // crate::rmm_println!("write_all");
         for byte in buf {
+            // crate::rmm_println!("write_all byte {}", byte);
             //Prepand '\r' to '\n'
             if *byte == 0xa {
                 self.putc(0xd)?;
             }
             self.putc(*byte)?;
         }
+        // crate::rmm_println!("write_all 2");
         Ok(())
     }
 }

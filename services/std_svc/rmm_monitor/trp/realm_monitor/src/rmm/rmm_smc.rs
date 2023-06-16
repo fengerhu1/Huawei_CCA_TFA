@@ -53,7 +53,7 @@ pub struct RmmSMC {
 
 impl RmmSMC {
     pub fn smc_granule_delegate(addr: usize) -> usize {
-        // crate::println!("Debug: smc_granule_delegate addr: {:x}", addr);
+        crate::dprintln!("Debug: smc_granule_delegate addr: {:x}", addr);
         let g = GranuleUtil::find_lock_granule(addr, GranuleState::GranuleStateNs);
         match g {
             Ok(granule) => {
@@ -89,6 +89,7 @@ impl RmmSMC {
      * rlm_para_addr: The address of the realm parameters
      */
     pub fn smc_realm_create(rd_addr: usize, rlm_para_addr: usize) -> usize {
+        crate::dprintln!("Debug: smc_granule_delegate rd_addr: {:x}", rd_addr);
         if RmmUtil::rmm_para_parser(rlm_para_addr) == ErrorStatus::StatusSuccess {
             if RmmUtil::validate_realm_params() == 0 {
                 let rtt_addr =  get_realm_params_rtt_addr();

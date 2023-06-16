@@ -221,10 +221,11 @@ use io::stdout;
 pub extern "C" fn init_console() {
     let _ = stdout().attach(crate::driver::uart::pl011::device());
     // logger::register_global_logger(LevelFilter::Info); // Control log level
-    crate::dprintln!("Initialized the console!");
-    let mut test:Vec<usize> =Vec::new();
-    test.push(1);
-    crate::dprintln!("test address {:p}", &test[0]);
+    // crate::rmm_println!("Initialized the console!");
+    crate::println!("Initialized the console!");
+    // let mut test:Vec<usize> =Vec::new();
+    // test.push(1);
+    // crate::dprintln!("test address {:p}", &test[0]);
 }
 
 #[no_mangle]

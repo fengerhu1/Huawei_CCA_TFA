@@ -76,14 +76,15 @@ extern "C"{
  */
 pub fn granule_map(rlm_para_addr: usize, realm_granule: Granule, slot: BufferSlot) -> usize {
     let idx = addr_to_idx(rlm_para_addr);
-    // let addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    let addr;
-    if idx > (NR_GRANULES/2) {
-        addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
-    }
-    else {// For tf-a-test
-        addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    }
+    // For qemu
+    let addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+    // let addr;
+    // if idx > (NR_GRANULES/2) {
+    //     addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
+    // }
+    // else {// For tf-a-test
+    //     addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+    // }
     let ns=(realm_granule.state == GranuleState::GranuleStateNs);
     let ret: usize;
 
@@ -102,14 +103,14 @@ pub fn granule_map_with_id(idx: usize, slot: BufferSlot) -> usize {
         crate::println!("ERROR: granule_map_with_id is failed: invalied idx");
     }
     // cal the physical address of the mapped granule
-    // let addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    let addr;
-    if idx > (NR_GRANULES/2) {
-        addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
-    }
-    else {// For tf-a-test
-        addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    }
+    let addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+    // let addr;
+    // if idx > (NR_GRANULES/2) {
+    //     addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
+    // }
+    // else {// For tf-a-test
+    //     addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+    // }
     let state = GranuleUtil::acquire_granule_state(idx as u32);
     let ns=(state == GranuleState::GranuleStateNs);
     let ret: usize;
@@ -125,18 +126,20 @@ pub fn granule_map_with_id(idx: usize, slot: BufferSlot) -> usize {
  * \brief Map the granule with the granule id and state, and return the corresponding va
  */
 pub fn granule_map_with_id_state(idx: usize, state: GranuleState, slot: BufferSlot) -> usize {
+    crate::dprintln!("Debug: granule_map_with_id_state idx {:x}, state {:?}, bufferslot {:?}", idx, state, slot);
     if idx > NR_GRANULES {
         crate::println!("ERROR: granule_map_with_id is failed: invalied idx");
     }
     // cal the physical address of the mapped granule
-    // let addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    let addr;
-    if idx > (NR_GRANULES/2) {
-        addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
-    }
-    else {// For tf-a-test
-        addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    }
+    let addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+    // For FVP
+    // if idx > (NR_GRANULES/2) {
+    //     addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
+    // }
+    // else {// For tf-a-test
+    //     addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+    // }
+    crate::dprintln!("Debug: granule_map_with_id_state addr {:x}", addr);
     let ns=(state == GranuleState::GranuleStateNs);
     let ret: usize;
 
@@ -340,6 +343,7 @@ impl RmmUtil {
     }
     
     pub fn realm_create_ops() {
+        crate::dprintln!("Debug: realm_create_ops");
         let v_percpu_list = VPERCPU_LOCK.lock();
 
         let g_rd_id = v_percpu_list[crate::cpuid!()].locked_granules[0].id;
@@ -352,7 +356,7 @@ impl RmmUtil {
         drop(v_percpu_list);
 
         GranuleUtil::realm_create_granule_ops1(g_rd_id, g_table_id, g_rec_list_id);
-
+        crate::dprintln!("Debug: realm_create_ops 2");
         let rd_ptr = granule_map_with_id_state(g_rd_id as usize, g_rd_state, BufferSlot::SLOT_RD) as *mut Rd;
         let rd = unsafe {&mut (*rd_ptr)};
 

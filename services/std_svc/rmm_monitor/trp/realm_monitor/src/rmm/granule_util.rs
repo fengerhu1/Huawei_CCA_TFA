@@ -30,21 +30,34 @@ pub fn ALIGNED(_size: usize, _alignment: usize) -> bool {
 //     return (addr - MEM0_PHYS) / GRANULE_SIZE;
 // }
 
-// For Linux
+// For Linux-fvp
+// pub fn addr_to_idx(addr: usize) -> usize {
+//     if (addr>MEM1_PHYS) && (addr<(MEM1_PHYS+MEM0_SIZE/2)){
+//         crate::println!("DEBUG: addr_to_idx1 {:x}, idx {:x}", addr, ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2);
+//         return ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2;
+//     }
+//     else if (addr>MEM0_PHYS) && (addr<(MEM0_PHYS+MEM0_SIZE/2)) {
+//         crate::println!("DEBUG: addr_to_idx2 {:x}, idx {:x}", addr, (addr - MEM0_PHYS) / GRANULE_SIZE);
+//         return (addr - MEM0_PHYS) / GRANULE_SIZE;
+//     }
+//     else {
+//         crate::println!("ERROR: addr_to_idx fails {:x}", addr);
+//         return NR_GRANULES;
+//     }
+// }
+
+// For Linux-qemu
 pub fn addr_to_idx(addr: usize) -> usize {
-    if (addr>MEM1_PHYS) && (addr<(MEM1_PHYS+MEM_PHYS_BASE/2)){
-        // crate::println!("DEBUG: addr_to_idx {:x}, idx {:x}", addr, ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2);
-        return ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2;
-    }
-    else if (addr>MEM0_PHYS) && (addr<(MEM0_PHYS+MEM_PHYS_BASE/2)) {
-        // crate::println!("DEBUG: addr_to_idx {:x}, idx {:x}", addr, (addr - MEM0_PHYS) / GRANULE_SIZE);
+    if (addr>MEM0_PHYS) && (addr<(MEM0_PHYS+MEM0_SIZE)) {
+        crate::dprintln!("DEBUG: addr_to_idx2 {:x}, idx {:x}", addr, (addr - MEM0_PHYS) / GRANULE_SIZE);
         return (addr - MEM0_PHYS) / GRANULE_SIZE;
     }
     else {
-        crate::println!("ERROR: addr_to_idx fails {:x}", addr);
+        crate::dprintln!("ERROR: addr_to_idx fails {:x}", addr);
         return NR_GRANULES;
     }
 }
+
 
 use alloc::{
     vec::Vec,
@@ -59,6 +72,7 @@ use crate::io::Write;
 // use spinning_top::Spinlock;
 
 #[repr(C)]
+#[derive(Debug)]
 #[derive(Clone, Copy)]
 #[derive(PartialEq)]
 pub enum GranuleState {
@@ -131,6 +145,7 @@ pub enum ErrorStatus{
 }
 
 #[repr(C)]
+#[derive(Debug)]
 #[derive(PartialEq)]
 #[derive(Clone, Copy)]
 pub enum BufferSlot {
