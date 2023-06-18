@@ -206,7 +206,7 @@ pub fn handle_realm_rsi(rec: &mut Rec) -> bool {
                 }
                 OCALL_SYS_WRITE => { //Realm print
                     let mut ret = true;
-                    crate::println!("DEBUG: handle_realm_rsi: handle the realm print");
+                    crate::dprintln!("DEBUG: handle_realm_rsi: handle the realm print");
                     table_walk_lock_unlock(rec.realm_info.g_rd, arg2, RTT_PAGE_LEVEL);
                     let v_percpu_list = VPERCPU_LOCK.lock();
                     let g_llt_id = v_percpu_list[crate::cpuid!()].wi.g_llt_id;
