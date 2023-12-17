@@ -8,6 +8,10 @@ edition = "2021"
 [lib]
 crate-type = ["staticlib"]
 
+[features]
+platform_qemu = []
+platform_fvp = []
+
 [dependencies]
 modular-bitfield = "0.6.0"
 bit_field = "0.10.1"

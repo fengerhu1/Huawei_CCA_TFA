@@ -10,13 +10,17 @@ RMM_SOURCES		+=	services/std_svc/rmm_monitor/trp/trp_entry.S \
 				services/std_svc/rmm_monitor/trp/trp_main.c  \
 				services/std_svc/rmm_monitor/trp/trp_helpers.c
 
-RMM_DEFAULT_LINKER_SCRIPT_SOURCE := services/std_svc/rmm_monitor/trp/linker.ld.S
+ifeq (${PLAT}, qemu)
+	RMM_CPPFLAGS   +=      -DPLAT_XLAT_TABLES_DYNAMIC
+	RMM_DEFAULT_LINKER_SCRIPT_SOURCE := services/std_svc/rmm_monitor/trp/linker.ld.S
+else ifeq (${PLAT}, fvp)
+	RMM_LINKERFILE		:=	services/std_svc/rmm_monitor/trp/linker.lds
+endif
 
 RMM_LIBS		:= 	services/std_svc/rmm_monitor/trp/realm_monitor/target/aarch64-unknown-none-softfloat/release/librealm_monitor.a \
 					services/std_svc/rmm_monitor/trp/realm_monitor/libc_rmm.a
 					# services/../../mbedtls/library/libmbedcrypto.a
 
-RMM_CPPFLAGS   +=      -DPLAT_XLAT_TABLES_DYNAMIC
 
 # Include the platform-specific TRP Makefile
 # If no platform-specific TRP Makefile exists, it means TRP is not supported

@@ -71,7 +71,7 @@ add_library(c_rmm STATIC
 add_custom_target(
     librust_rmm
     BYPRODUCTS "${CMAKE_SOURCE_DIR}/target/aarch64-unknown-none-softfloat/release/librealm_monitor.a"
-    COMMAND sh ${CMAKE_SOURCE_DIR}/build.sh
+    COMMAND sh ${CMAKE_SOURCE_DIR}/build.sh ${PLAT}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 

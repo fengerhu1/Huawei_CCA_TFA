@@ -5,7 +5,13 @@ pub const SZ_512M: usize = (1)<<29;
 // FIXME: resize the stack size
 // pub const MEM0_SIZE: usize = SZ_2G;
 // For Linux
-pub const MEM0_SIZE: usize = SZ_512M*4/2;
+pub const MEM0_SIZE: usize = if cfg!(feature = "platform_fvp") {
+    SZ_512M*4
+} else if cfg!(feature = "platform_qemu") {
+    SZ_512M*4/2
+} else {
+    0x0usize
+};
 // For TF-A-TEST
 // pub const MEM0_SIZE: usize = SZ_512M*2;
 pub const GRANULE_SIZE: usize = SZ_4K;
@@ -30,34 +36,33 @@ pub fn ALIGNED(_size: usize, _alignment: usize) -> bool {
 //     return (addr - MEM0_PHYS) / GRANULE_SIZE;
 // }
 
-// For Linux-fvp
-// pub fn addr_to_idx(addr: usize) -> usize {
-//     if (addr>MEM1_PHYS) && (addr<(MEM1_PHYS+MEM0_SIZE/2)){
-//         crate::println!("DEBUG: addr_to_idx1 {:x}, idx {:x}", addr, ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2);
-//         return ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2;
-//     }
-//     else if (addr>MEM0_PHYS) && (addr<(MEM0_PHYS+MEM0_SIZE/2)) {
-//         crate::println!("DEBUG: addr_to_idx2 {:x}, idx {:x}", addr, (addr - MEM0_PHYS) / GRANULE_SIZE);
-//         return (addr - MEM0_PHYS) / GRANULE_SIZE;
-//     }
-//     else {
-//         crate::println!("ERROR: addr_to_idx fails {:x}", addr);
-//         return NR_GRANULES;
-//     }
-// }
-
-// For Linux-qemu
+#[cfg(feature = "platform_qemu")]
 pub fn addr_to_idx(addr: usize) -> usize {
     if (addr>MEM0_PHYS) && (addr<(MEM0_PHYS+MEM0_SIZE)) {
         crate::dprintln!("DEBUG: addr_to_idx2 {:x}, idx {:x}", addr, (addr - MEM0_PHYS) / GRANULE_SIZE);
         return (addr - MEM0_PHYS) / GRANULE_SIZE;
     }
     else {
-        crate::dprintln!("ERROR: addr_to_idx fails {:x}", addr);
+        crate::println!("ERROR: addr_to_idx fails {:x}", addr);
         return NR_GRANULES;
     }
 }
 
+#[cfg(feature = "platform_fvp")]
+pub fn addr_to_idx(addr: usize) -> usize {
+    if (addr>MEM1_PHYS) && (addr<(MEM1_PHYS+MEM_PHYS_BASE/2)){
+        // crate::println!("DEBUG: addr_to_idx {:x}, idx {:x}", addr, ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2);
+        return ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2;
+    }
+    else if (addr>MEM0_PHYS) && (addr<(MEM0_PHYS+MEM_PHYS_BASE/2)) {
+        // crate::println!("DEBUG: addr_to_idx {:x}, idx {:x}", addr, (addr - MEM0_PHYS) / GRANULE_SIZE);
+        return (addr - MEM0_PHYS) / GRANULE_SIZE;
+    }
+    else {
+        crate::println!("ERROR: addr_to_idx fails {:x}", addr);
+        return NR_GRANULES;
+    }
+}
 
 use alloc::{
     vec::Vec,

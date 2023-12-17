@@ -39,6 +39,73 @@ ENTRY(run_realm):
 	ldp	x26, x27, [x0, #(16 * 13)]
 	ldp	x28, x29, [x0, #(16 * 14)]
 	ldr	x30,      [x0, #(16 * 15)]
+	add x0, x0, #(16 * 16)
+	ld1 {v0.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v1.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v2.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v3.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v4.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v5.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v6.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v7.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v8.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v9.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v10.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v11.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v12.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v13.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v14.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v15.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v16.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v17.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v18.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v19.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v20.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v21.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v22.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v23.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v24.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v25.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v26.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v27.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v28.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v29.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v30.4s}, [x0]
+	add x0, x0, #16
+	ld1 {v31.4s}, [x0]
+	add x0, x0, #16
+	sub x0, x0, #(16 * 48)
+
 	ldp	x0,  x1,  [x0, #(16 * 0)]
 
 	eret
@@ -71,6 +138,73 @@ realm_exit:
 	stp	x26, x27, [x1, #(16 * 13)]
 	stp	x28, x29, [x1, #(16 * 14)]
 	str	x30,      [x1, #(16 * 15)]
+	add x1, x1, #(16 * 16)
+	st1 {v0.4s}, [x1]
+	add x1, x1, #16
+	st1 {v1.4s}, [x1]
+	add x1, x1, #16
+	st1 {v2.4s}, [x1]
+	add x1, x1, #16
+	st1 {v3.4s}, [x1]
+	add x1, x1, #16
+	st1 {v4.4s}, [x1]
+	add x1, x1, #16
+	st1 {v5.4s}, [x1]
+	add x1, x1, #16
+	st1 {v6.4s}, [x1]
+	add x1, x1, #16
+	st1 {v7.4s}, [x1]
+	add x1, x1, #16
+	st1 {v8.4s}, [x1]
+	add x1, x1, #16
+	st1 {v9.4s}, [x1]
+	add x1, x1, #16
+	st1 {v10.4s}, [x1]
+	add x1, x1, #16
+	st1 {v11.4s}, [x1]
+	add x1, x1, #16
+	st1 {v12.4s}, [x1]
+	add x1, x1, #16
+	st1 {v13.4s}, [x1]
+	add x1, x1, #16
+	st1 {v14.4s}, [x1]
+	add x1, x1, #16
+	st1 {v15.4s}, [x1]
+	add x1, x1, #16
+	st1 {v16.4s}, [x1]
+	add x1, x1, #16
+	st1 {v17.4s}, [x1]
+	add x1, x1, #16
+	st1 {v18.4s}, [x1]
+	add x1, x1, #16
+	st1 {v19.4s}, [x1]
+	add x1, x1, #16
+	st1 {v20.4s}, [x1]
+	add x1, x1, #16
+	st1 {v21.4s}, [x1]
+	add x1, x1, #16
+	st1 {v22.4s}, [x1]
+	add x1, x1, #16
+	st1 {v23.4s}, [x1]
+	add x1, x1, #16
+	st1 {v24.4s}, [x1]
+	add x1, x1, #16
+	st1 {v25.4s}, [x1]
+	add x1, x1, #16
+	st1 {v26.4s}, [x1]
+	add x1, x1, #16
+	st1 {v27.4s}, [x1]
+	add x1, x1, #16
+	st1 {v28.4s}, [x1]
+	add x1, x1, #16
+	st1 {v29.4s}, [x1]
+	add x1, x1, #16
+	st1 {v30.4s}, [x1]
+	add x1, x1, #16
+	st1 {v31.4s}, [x1]
+	add x1, x1, #16
+	sub x1, x1, #(16 * 48)
+
 
 	/* x0 and x1 as stored by el2_vectors */
 	ldp	x2, x3,	  [sp]

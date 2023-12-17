@@ -10,7 +10,13 @@
 #include <services/rmm_core_manifest.h>
 #include <services/rmmd_svc.h>
 #include <services/trp/platform_trp.h>
+#ifdef PLAT_QEMU
 #include <services/trp/trp_helpers.h>
+#endif
+
+#ifdef PLAT_FVP
+#include <trp_helpers.h>
+#endif
 #include "trp_private.h"
 
 #include <platform_def.h>
@@ -63,10 +69,16 @@ void trp_setup(uint64_t x0,
 			   sizeof(trp_shared_region_start));
 
 	/* Perform early platform-specific setup */
+	#ifdef PLAT_QEMU
 	trp_early_platform_setup_qemu();
-	// trp_early_platform_setup((struct rmm_manifest *)trp_shared_region_start);
+	#endif
+
+	#ifdef PLAT_FVP
+	trp_early_platform_setup((struct rmm_manifest *)trp_shared_region_start);
+	#endif
 }
 
+#ifdef PLAT_QEMU
 int trp_validate_warmboot_args(uint64_t x0, uint64_t x1,
 			       uint64_t x2, uint64_t x3)
 {
@@ -84,6 +96,7 @@ int trp_validate_warmboot_args(uint64_t x0, uint64_t x1,
 
 	return ((x1 | x2 | x3) == 0UL) ? 0 : E_RMM_BOOT_UNKNOWN;
 }
+#endif
 
 extern void rust_printf();
 extern void rust_test_alloc();
@@ -145,6 +158,7 @@ void test_secondary() {
 	INFO("secondary boot here \n");
 }
 
+#ifdef PLAT_QEMU
 /*******************************************************************************
  * Setup function for TRP.
  ******************************************************************************/
@@ -156,6 +170,7 @@ void trp_setup_qemu(void)
 	trp_plat_arch_setup();
 	NOTICE("TRP: trp_plat_arch_setup\n");
 }
+#endif
 
 /* Main function for TRP */
 void trp_main(void)
@@ -192,11 +207,13 @@ void trp_main(void)
 	print_info("hello world 8\n");
 }
 
+#ifdef PLAT_QEMU
 void trp_enable_mmu(void)
 {
 	int linear_id = plat_my_core_pos();
 	trp_plat_arch_enable_mmu(linear_id);
 }
+#endif
 
 /*******************************************************************************
  * Returning RMI version back to Normal World

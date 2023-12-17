@@ -21,6 +21,14 @@ set(CMAKE_OBJ_COPY "${CROSS_COMPILE}objcopy")
 
 set(CMAKE_C_FLAGS "-std=gnu99 -fdiagnostics-show-option -Wall -Werror-implicit-function-declaration -nostdlib -march=armv8.4-a -nostartfiles -g" CACHE STRING "" FORCE)
 
+if(PLAT STREQUAL "qemu")
+    add_definitions(-DPLAT_QEMU)
+elseif(PLAT STREQUAL "fvp")
+    add_definitions(-DPLAT_FVP)
+else()
+    message(FATAL_ERROR "Unsupported platform: ${PLAT}")
+endif()
+
 SET(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -D__ASSEMBLY__" CACHE STRING "" FORCE)
 
 set(CMAKE_GEN_ASM_FLAGS "-std=gnu99 -fdiagnostics-show-option -Wall -Werror-implicit-function-declaration -nostdlib -march=armv8.4-a -nostartfiles -S" CACHE STRING "" FORCE)

@@ -8,7 +8,13 @@
 #define TRP_PRIVATE_H
 
 #include <services/rmmd_svc.h>
+#ifdef PLAT_QEMU
 #include <services/trp/trp_helpers.h>
+#endif
+
+#ifdef PLAT_FVP
+#include <trp_helpers.h>
+#endif
 
 /* Definitions for RMM-EL3 Interface ABI VERSION */
 #define TRP_RMM_EL3_ABI_VERS_MAJOR	RMM_EL3_IFC_VERSION_MAJOR

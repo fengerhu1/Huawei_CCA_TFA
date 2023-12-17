@@ -110,6 +110,7 @@ static void initialize_boot_page_table(void) {
                          /* bit[1]: block (0) table (1) */
              | BIT(0);	/* bit[0]: valid */
     
+    #ifdef PLAT_QEMU
     // for uart 0x9000000
     j = GET_L2_INDEX(0x9000000);
     _boot_pt_l2_1[j] = (j << HP_2M_BLOCK_SHIFT)
@@ -131,6 +132,7 @@ static void initialize_boot_page_table(void) {
              | (0 << 2)	/* bit[4-2]: MT_DEVICE_nGnRnE */
                          /* bit[1]: block (0) table (1) */
              | BIT(0);	/* bit[0]: valid */
+    #endif
    
     print_info("here j: %lx\n", &j);
     init_pt = 1;

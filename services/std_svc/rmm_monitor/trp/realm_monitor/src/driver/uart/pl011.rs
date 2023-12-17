@@ -6,16 +6,25 @@ use spinning_top::Spinlock;
 use crate::io::{self, ConsoleWriter, Error, ErrorKind, Result, Write};
 
 const V2M_OFFSET: usize = 0;
-// For TFA
-// const V2M_IOFPGA_UART3_BASE: usize = V2M_OFFSET + 0x1c0c0000usize;
-// For qemu
-const V2M_IOFPGA_UART3_BASE: usize = V2M_OFFSET + 0x9000000usize;
+
+const V2M_IOFPGA_UART3_BASE: usize = if cfg!(feature = "platform_fvp") {
+    V2M_OFFSET + 0x1c0c0000usize
+} else if cfg!(feature = "platform_qemu") {
+    V2M_OFFSET + 0x9000000usize
+} else {
+    0x0usize
+};
 
 const BASE: usize = V2M_IOFPGA_UART3_BASE;
-// For TFA
-// const CLK_IN_HZ: usize = 24000000;
-// For qemu
-const CLK_IN_HZ: usize = 0x1;
+
+const CLK_IN_HZ: usize = if cfg!(feature = "platform_fvp") {
+    24000000
+} else if cfg!(feature = "platform_qemu") {
+    0x1
+} else {
+    0x0
+};
+
 const BAUDRATE: usize = 115200;
 
 const REG_LEN: isize = core::mem::size_of::<u32>() as isize;
@@ -93,7 +102,9 @@ impl DeviceInner {
     pub fn putc(&mut self, byte: u8) -> Result<()> {
         if self.ready {
             unsafe {
-                // while self.register.offset(UARTFR).read_volatile() & UARTFR_TXFF_BIT == 0 {}
+                if cfg!(feature = "platform_fvp") {
+                    while self.register.offset(UARTFR).read_volatile() & UARTFR_TXFF_BIT == 0 {}
+                }
                 self.register.offset(UARTDR).write_volatile(byte as u32);
             }
             Ok(())
