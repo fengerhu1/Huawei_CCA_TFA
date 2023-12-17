@@ -150,7 +150,8 @@ pub fn handle_realm_rsi(rec: &mut Rec) -> bool {
             match SyscallNumber::from(rec.regs[8] as i32){
                 SyscallNumber::__NR_brk | SyscallNumber::__NR_lseek | SyscallNumber::__NR_mmap 
                 | SyscallNumber::__NR_openat | SyscallNumber::__NR_readv | SyscallNumber::__NR_writev
-                | SyscallNumber::__NR_ioctl | SyscallNumber::__NR_close => {
+                | SyscallNumber::__NR_ioctl | SyscallNumber::__NR_close
+                | SyscallNumber::__NR_clock_gettime | SyscallNumber::__NR_gettimeofday => {
                     let mut v_percpu_list = VPERCPU_LOCK.lock();
                     let mut i = 0;
                     while i < REC_RUN_SMC_NR_GPRS {
