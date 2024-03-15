@@ -32,6 +32,7 @@ use crate::rmm::rec_util::{
     EXIT_REASON_RSI_MMAP,
     EXIT_REASON_RSI_UNMAP,
     EXIT_REASON_RSI_SYSCALL,
+    EXIT_REASON_RSI_MODEL_REQUEST,
 };
 
 use crate::rmm::rmm_smc::{
@@ -102,6 +103,7 @@ pub const OCALL_SYS_MMAP: usize =   1;
 pub const OCALL_SYS_UNMAP: usize =   2;
 pub const OCALL_SYS_WRITE: usize =   3;
 pub const OCALL_SYS_ABORT: usize =   4;
+pub const OCALL_MODEL_REQUEST: usize = 5;
 
 extern "C"{
     pub fn realm_printf(output: *mut usize);
@@ -252,6 +254,20 @@ pub fn handle_realm_rsi(rec: &mut Rec) -> bool {
                     if ec == ESR_EL2_EC_FP {
                         crate::println!("ERROR: handle_realm_rsi: realm abort, access FP or SIMD instruction and trap\n");   
                     }
+                    return false;
+                }
+                OCALL_MODEL_REQUEST => {
+                    crate::println!("ocall model request get!");
+                    let mut i = 0;
+
+                    let mut v_percpu_list = VPERCPU_LOCK.lock();
+
+                    while i < REC_RUN_HVC_NR_GPRS {
+                        v_percpu_list[crate::cpuid!()].run.gprs[i] = rec.regs[i];
+                        i+=1;
+                    }
+                    drop(v_percpu_list);
+                    set_rec_run_exit_reason(EXIT_REASON_RSI_MODEL_REQUEST);
                     return false;
                 }
                 other => {

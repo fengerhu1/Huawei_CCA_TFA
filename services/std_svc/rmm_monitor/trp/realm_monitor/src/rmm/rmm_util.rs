@@ -4,6 +4,7 @@ use crate::rmm::granule_util::{
     GranuleUtil,
     ALIGNED,
     addr_to_idx,
+    idx_to_addr,
     GRANULE_SIZE,
     NR_GRANULES,
     ERROR_MAX,
@@ -188,7 +189,7 @@ impl RmmUtil {
                 let debug_para = ((rlm_para_addr as usize) + 0x200000000) as *const RealmParams; 
                 let tmp_RealmParams = granule_map(rlm_para_addr, granule, BufferSlot::SLOT_INPUT) as *mut RealmParams;
                 // acquire the global v_percpu_list
-                let mut v_percpu_list = VPERCPU_LOCK.lock();                
+                let mut v_percpu_list = VPERCPU_LOCK.lock(); 
                 
                 // dereference a raw pointer
                 // copy the realm_parameter into v_percpu
@@ -358,7 +359,6 @@ impl RmmUtil {
     }
     
     pub fn realm_create_ops() {
-        crate::dprintln!("Debug: realm_create_ops");
         let v_percpu_list = VPERCPU_LOCK.lock();
 
         let g_rd_id = v_percpu_list[crate::cpuid!()].locked_granules[0].id;
@@ -371,7 +371,7 @@ impl RmmUtil {
         drop(v_percpu_list);
 
         GranuleUtil::realm_create_granule_ops1(g_rd_id, g_table_id, g_rec_list_id);
-        crate::dprintln!("Debug: realm_create_ops 2");
+
         let rd_ptr = granule_map_with_id_state(g_rd_id as usize, g_rd_state, BufferSlot::SLOT_RD) as *mut Rd;
         let rd = unsafe {&mut (*rd_ptr)};
 
@@ -412,6 +412,13 @@ impl RmmUtil {
     pub fn granule_delegate_ops(idx: u32, addr: usize) {
         GranuleUtil::granule_set_state(idx, GranuleState::GranuleStateDelegated);
         granule_map_zero(idx, BufferSlot::SLOT_DELEGATED);
+        // We need to call smc call to el3 monitor to delegate the granule
+        // We lock the delegate granule before
+        GranuleUtil::unlock_granule(idx);
+    }
+
+    pub fn granule_delegate_without_clear_ops(idx: u32, addr: usize) {
+        GranuleUtil::granule_set_state(idx, GranuleState::GranuleStateDelegated);
         // We need to call smc call to el3 monitor to delegate the granule
         // We lock the delegate granule before
         GranuleUtil::unlock_granule(idx);

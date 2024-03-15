@@ -105,6 +105,14 @@ pub extern "C" fn smc_table_create(rtt_addr: usize, rd_addr: usize, map_addr: us
 }
 
 #[no_mangle]
+pub extern "C" fn smc_table_create_compact(rd_addr: usize, args_addr: usize,
+    size: usize) -> usize {
+    let ret = RmmSMC::smc_table_create_compact(rd_addr, args_addr, size);
+    crate::dprintln!("smc_table_create is finished");
+    return ret;
+}
+
+#[no_mangle]
 pub extern "C" fn smc_table_destroy(rtt_addr: usize, rd_addr: usize, map_addr: usize,
     level: usize) -> usize {
     let ret = RmmSMC::smc_table_destroy(rtt_addr, rd_addr, map_addr, level);
@@ -127,9 +135,21 @@ pub extern "C" fn smc_data_unmap(rd_addr: usize, map_addr: usize) -> usize {
 }
 
 #[no_mangle]
-pub extern "C" fn smc_data_create(data_addr: usize, rd_addr: usize, src_addr: usize, map_addr: usize) -> usize {
+pub extern "C" fn smc_data_create(data_addr: usize, rd_addr: usize,
+                                  src_addr: usize, map_addr: usize) -> usize {
     let ret = RmmSMC::smc_data_create(data_addr, rd_addr, src_addr, map_addr);
     crate::dprintln!("smc_data_create is finished");
+    return ret;
+}
+
+#[no_mangle]
+pub extern "C" fn smc_data_create_compact(rd_addr: usize, map_addr: usize,
+                                          src_seg_cnt: usize, src_args_addr: usize,
+                                          dst_seg_cnt: usize, dst_args_addr: usize) -> usize {
+    let ret = RmmSMC::smc_data_create_compact(rd_addr, map_addr,
+                                              src_seg_cnt, src_args_addr,
+                                              dst_seg_cnt, dst_args_addr);
+    crate::dprintln!("smc_data_create_compact is finished");
     return ret;
 }
 
@@ -141,9 +161,48 @@ pub extern "C" fn smc_data_destroy(map_addr: usize, rd_addr: usize) -> usize {
 }
 
 #[no_mangle]
-pub extern "C" fn smc_data_create_unknown(data_addr: usize, rd_addr: usize, map_addr: usize) -> usize {
+pub extern "C" fn smc_data_destroy_compact(rd_addr: usize,
+                                           map_addr: usize,
+                                           segment_cnt: usize,
+                                           args_addr: usize) -> usize {
+    let ret = RmmSMC::smc_data_destroy_compact(rd_addr, map_addr, segment_cnt, args_addr);
+    crate::dprintln!("smc_data_destroy is finished");
+    return ret;
+}
+
+#[no_mangle]
+pub extern "C" fn smc_data_destroy_shared_compact(rd_addr: usize,
+                                                  map_addr: usize,
+                                                  size: usize) -> usize {
+    let ret = RmmSMC::smc_data_destroy_shared_compact(rd_addr, map_addr, size);
+    crate::dprintln!("smc_data_destroy is finished");
+    return ret;
+}
+
+#[no_mangle]
+pub extern "C" fn smc_data_create_unknown(data_addr: usize,
+                                          rd_addr: usize,
+                                          map_addr: usize) -> usize {
     let ret = RmmSMC::smc_data_create_unknown(data_addr, rd_addr, map_addr);
     crate::dprintln!("smc_data_create_unknown is finished");
+    return ret;
+}
+
+#[no_mangle]
+pub extern "C" fn smc_data_create_unknown_compact(rd_addr: usize, map_addr: usize,
+                                                  size: usize, args_addr: usize) -> usize {
+    let ret = RmmSMC::smc_data_create_unknown_compact(rd_addr, map_addr, size, args_addr);
+    crate::dprintln!("smc_data_create_unknown_compacted is finished");
+    return ret;
+}
+
+#[no_mangle]
+pub extern "C" fn smc_data_create_shared_compact(rd_addr: usize,
+                                                 map_addr: usize,
+                                                 size: usize,
+                                                 args_addr: usize) -> usize {
+    let ret = RmmSMC::smc_data_create_shared_compact(rd_addr, map_addr, size, args_addr);
+    crate::dprintln!("smc_data_create_shared_compact is finished");
     return ret;
 }
 
@@ -155,7 +214,8 @@ pub extern "C" fn smc_data_dispose(rd_addr: usize, rec_addr: usize) -> usize {
 }
 
 #[no_mangle]
-pub extern "C" fn smc_rec_create(rec_addr: usize, rd_addr: usize, mpidr: usize, rec_params_addr: usize) -> usize {
+pub extern "C" fn smc_rec_create(rec_addr: usize, rd_addr: usize,
+                                 mpidr: usize, rec_params_addr: usize) -> usize {
     let ret = RmmSMC::smc_rec_create(rec_addr, rd_addr, mpidr, rec_params_addr);
     crate::dprintln!("smc_rec_create is finished");
     return ret;
@@ -183,6 +243,13 @@ pub extern "C" fn smc_granule_delegate(addr: usize) -> usize {
 }
 
 #[no_mangle]
+pub extern "C" fn smc_granule_delegate_compact(args_addr: usize, segment_cnt: usize) -> usize {
+    let ret = RmmSMC::smc_granule_delegate_compact(args_addr, segment_cnt);
+    crate::dprintln!("smc_granule_delegate_compact finished");
+    return ret;
+}
+
+#[no_mangle]
 pub extern "C" fn smc_granule_undelegate(addr: usize) -> usize {
     let ret = RmmSMC::smc_granule_undelegate(addr);
     crate::dprintln!("smc_granule_undelegate addr: {:x}", addr);
@@ -190,7 +257,9 @@ pub extern "C" fn smc_granule_undelegate(addr: usize) -> usize {
 }
 
 #[no_mangle]
-pub extern "C" fn smc_data_create_shared(data_addr: usize, rd_addr: usize, map_addr: usize) -> usize {
+pub extern "C" fn smc_data_create_shared(data_addr: usize,
+                                         rd_addr: usize,
+                                         map_addr: usize) -> usize {
     let ret = RmmSMC::smc_data_create_shared(data_addr, rd_addr, map_addr);
     crate::dprintln!("smc_data_create_shared is finished");
     return ret;

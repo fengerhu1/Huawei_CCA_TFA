@@ -50,11 +50,11 @@ pub fn addr_to_idx(addr: usize) -> usize {
 
 #[cfg(feature = "platform_fvp")]
 pub fn addr_to_idx(addr: usize) -> usize {
-    if (addr>MEM1_PHYS) && (addr<(MEM1_PHYS+MEM_PHYS_BASE/2)){
+    if (addr>MEM1_PHYS) && (addr<(MEM1_PHYS+MEM0_SIZE/2)){
         // crate::println!("DEBUG: addr_to_idx {:x}, idx {:x}", addr, ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2);
         return ((addr - MEM1_PHYS) / GRANULE_SIZE) + NR_GRANULES/2;
     }
-    else if (addr>MEM0_PHYS) && (addr<(MEM0_PHYS+MEM_PHYS_BASE/2)) {
+    else if (addr>MEM0_PHYS) && (addr<(MEM0_PHYS+MEM0_SIZE/2)) {
         // crate::println!("DEBUG: addr_to_idx {:x}, idx {:x}", addr, (addr - MEM0_PHYS) / GRANULE_SIZE);
         return (addr - MEM0_PHYS) / GRANULE_SIZE;
     }
@@ -62,6 +62,11 @@ pub fn addr_to_idx(addr: usize) -> usize {
         crate::println!("ERROR: addr_to_idx fails {:x}", addr);
         return NR_GRANULES;
     }
+}
+
+// debug feature!
+pub fn idx_to_addr(idx: u32) -> usize {
+    return idx as usize * GRANULE_SIZE + MEM0_PHYS;
 }
 
 use alloc::{
@@ -294,7 +299,7 @@ impl GranuleUtil {
         let mut granule_lock = GRANULE_LOCK.lock();
         let mut is_lock = unsafe {GRANULE_LIST[idx as usize].is_lock};
         while is_lock == true {
-            crate::println!("try to lock granule {:x}", idx);
+            // crate::println!("try to lock granule {:x}", idx);
             drop(granule_lock);
             granule_lock = GRANULE_LOCK.lock();
             is_lock = unsafe {GRANULE_LIST[idx as usize].is_lock};

@@ -46,10 +46,7 @@ impl Write for Stdout {
 
 pub fn stdout() -> SpinlockGuard<'static, Stdout> {
     static STDOUT: Spinlock<Stdout> = Spinlock::new(Stdout::new());
-    // crate::rmm_println!("stdout init");
-    let ret = STDOUT.lock();
-    // crate::rmm_println!("stdout init: get lock");
-    return ret;
+    STDOUT.lock()
 }
 
 #[cfg(test)]

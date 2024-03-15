@@ -403,7 +403,7 @@ uint64_t rmmd_rmm_el3_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2,
 				void *handle, uint64_t flags)
 {
 	uint32_t src_sec_state;
-	int ret;
+	int ret, count;
 
 	/* If RMM failed to boot, treat any RMM-EL3 interface SMC as unknown */
 	if (rmm_boot_failed) {
@@ -423,8 +423,26 @@ uint64_t rmmd_rmm_el3_handler(uint32_t smc_fid, uint64_t x1, uint64_t x2,
 	case RMM_GTSI_DELEGATE:
 		ret = gpt_delegate_pas(x1, PAGE_SIZE_4KB, SMC_FROM_REALM);
 		SMC_RET1(handle, gpt_to_gts_error(ret, smc_fid, x1));
+	case RMM_GTSI_DELEGATE_COMPACT:
+		count = 0;
+		for(; count < x2; count ++) {
+			ret = gpt_delegate_pas(x1 + count * PAGE_SIZE_4KB, PAGE_SIZE_4KB, SMC_FROM_REALM);
+			if (ret != 0) {
+				SMC_RET1(handle, gpt_to_gts_error(ret, smc_fid, x1));
+			}
+		}
+		SMC_RET1(handle, gpt_to_gts_error(ret, smc_fid, x1));
 	case RMM_GTSI_UNDELEGATE:
 		ret = gpt_undelegate_pas(x1, PAGE_SIZE_4KB, SMC_FROM_REALM);
+		SMC_RET1(handle, gpt_to_gts_error(ret, smc_fid, x1));
+	case RMM_GTSI_UNDELEGATE_COMPACT:
+		count = 0;
+		for(; count < x2; count ++) {
+			ret = gpt_undelegate_pas(x1 + count * PAGE_SIZE_4KB, PAGE_SIZE_4KB, SMC_FROM_REALM);
+			if (ret != 0) {
+				SMC_RET1(handle, gpt_to_gts_error(ret, smc_fid, x1 + count * PAGE_SIZE_4KB));
+			}
+		}
 		SMC_RET1(handle, gpt_to_gts_error(ret, smc_fid, x1));
 	case RMM_ATTEST_GET_PLAT_TOKEN:
 		ret = rmmd_attest_get_platform_token(x1, &x2, x3);

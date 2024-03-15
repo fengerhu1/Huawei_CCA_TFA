@@ -147,6 +147,7 @@ const EXIT_REASON_RSI_DISPOSE: usize =			5;
 pub const EXIT_REASON_RSI_MMAP: usize =			6;
 pub const EXIT_REASON_RSI_UNMAP: usize =			7;
 pub const EXIT_REASON_RSI_SYSCALL: usize =			8;
+pub const EXIT_REASON_RSI_MODEL_REQUEST: usize =	9;
 
 
 
@@ -862,7 +863,7 @@ pub fn handle_exception_irq_lel(rec: &mut Rec) -> bool {
 	// }
 	else {
 		if intid != 0x1a {
-			crate::println!("Debug: handle_excpetion_irq_lel: cannot hanle such irq request {:x}", intid);
+			crate::println!("Debug: handle_exception_irq_lel: cannot hanle such irq request {:x}", intid);
 		}
 		set_rec_run_exit_reason(EXIT_REASON_IRQ);
 		return false;
@@ -902,6 +903,11 @@ pub fn rec_run_loop(rec: &mut Rec) {
 	// set vtcr and vttbr of realm
 	// access and not trap for FP and SIMD instructions
 	configure_realm_stage2(rec);
+	
+	// disable arch-timer
+	let mut cnthp_ctl = crate::read_sysreg!(cnthp_ctl_el2);
+	cnthp_ctl &= !CNTx_CTL_ENABLE;
+	crate::write_sysreg!(cnthp_ctl_el2, cnthp_ctl);
 
 	// crate::println!("vttbr_el2 {:x}", rec.common_sysregs.vttbr_el2);
 	// crate::println!("vtcr_el2 {:x}", rec.common_sysregs.vtcr_el2);
