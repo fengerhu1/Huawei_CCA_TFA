@@ -147,6 +147,7 @@ const EXIT_REASON_RSI_DISPOSE: usize =			5;
 pub const EXIT_REASON_RSI_MMAP: usize =			6;
 pub const EXIT_REASON_RSI_UNMAP: usize =			7;
 pub const EXIT_REASON_RSI_SYSCALL: usize =			8;
+pub const EXIT_REASON_RSI_MODEL_REQUEST: usize =	9;
 
 
 
@@ -337,7 +338,7 @@ pub struct Rec {
 	vtimer: EmulatedTimerState,
 	ptimer: EmulatedTimerState,
 
-	pub regs: [usize; 32],
+	pub regs: [usize; 96], // 32 x registers, 32 v registers
 	pub pc: usize,
 	pstate: usize,
 
@@ -371,7 +372,7 @@ impl Rec {
 			runnable: false,
 			vtimer: EmulatedTimerState::new(),
 			ptimer: EmulatedTimerState::new(),
-            regs: [0; 32],
+            regs: [0; 96],
 			pc: 0,
 			pstate: 0,
 
@@ -413,14 +414,21 @@ pub fn init_common_sysregs(rec: &mut Rec, rd: &mut Rd) {
 	//TODO:RMIAux.c 55
 	rec.common_sysregs.vtcr_el2 = VTCR_FLAGS;
 	//find the physical address of the g_table
-	let addr =  MEM0_PHYS + (rd.g_table.id as usize * GRANULE_SIZE);
-	// let addr; // For Linux
-    // if (rd.g_table.id as usize) > (NR_GRANULES/2) {
-    //     addr = MEM1_PHYS + ((rd.g_table.id as usize)-(NR_GRANULES/2))*GRANULE_SIZE;
-    // }
-    // else {// For tf-a-test
-    //     addr =  MEM0_PHYS + ((rd.g_table.id as usize * GRANULE_SIZE) );
-    // }
+	let addr;
+	if cfg!(feature = "platform_qemu") {
+		addr =  MEM0_PHYS + (rd.g_table.id as usize * GRANULE_SIZE);
+	}
+	else if cfg!(feature = "platform_fvp") {
+		if (rd.g_table.id as usize) > (NR_GRANULES/2) {
+			addr = MEM1_PHYS + ((rd.g_table.id as usize)-(NR_GRANULES/2))*GRANULE_SIZE;
+		}
+		else {// For tf-a-test
+			addr =  MEM0_PHYS + ((rd.g_table.id as usize * GRANULE_SIZE) );
+		}
+	} else {
+        addr = 0;
+        crate::println!("ERROR: init_common_sysregs is failed: invalied platform");
+    }
 	//ignore the last bit of address and retrieve [47:1] bits
 	rec.common_sysregs.vttbr_el2 = addr & crate::MASK!(TTBRx_EL2_BADDR_WIDTH, TTBRx_EL2_BADDR_SHIFT);
 }
@@ -844,8 +852,7 @@ pub fn handle_exception_sync(rec: &mut Rec) -> bool
 /*
  * \brief: ignore the VTIMER and P timer interrupt
  */
-pub fn handle_excpetion_irq_lel(rec: &mut Rec) -> bool {
-
+pub fn handle_exception_irq_lel(rec: &mut Rec) -> bool {
 	let icc_hppir1_el1 = crate::read_sysreg!(ICC_HPPIR1_EL1);
 	let intid = icc_hppir1_el1 & ICC_HPPIR1_EL1_INTID;
 	if intid == INTID_VTIMER_EL1  || intid == INTID_PTIMER_EL1 {
@@ -856,7 +863,7 @@ pub fn handle_excpetion_irq_lel(rec: &mut Rec) -> bool {
 	// }
 	else {
 		if intid != 0x1a {
-			crate::println!("Debug: handle_excpetion_irq_lel: cannot hanle such irq request {:x}", intid);
+			crate::println!("Debug: handle_exception_irq_lel: cannot hanle such irq request {:x}", intid);
 		}
 		set_rec_run_exit_reason(EXIT_REASON_IRQ);
 		return false;
@@ -875,7 +882,7 @@ pub fn handle_realm_exit(rec: &mut Rec, realm_exception_code: u32, first_loop: b
 			return handle_exception_sync(rec);
 		} else if realm_exception_code == ARM_EXCEPTION_IRQ_LEL {
 			// crate::println!("Debug: handle_realm_exit: ARM_EXCEPTION_IRQ_LEL");
-			return handle_excpetion_irq_lel(rec);}
+			return handle_exception_irq_lel(rec);}
 		else if realm_exception_code == ARM_EXCEPTION_FIQ_LEL {
 			crate::println!("Debug: handle_realm_exit: ARM_EXCEPTION_FIQ_LEL");
 			set_rec_run_exit_reason(EXIT_REASON_FIQ);
@@ -896,6 +903,11 @@ pub fn rec_run_loop(rec: &mut Rec) {
 	// set vtcr and vttbr of realm
 	// access and not trap for FP and SIMD instructions
 	configure_realm_stage2(rec);
+	
+	// disable arch-timer
+	let mut cnthp_ctl = crate::read_sysreg!(cnthp_ctl_el2);
+	cnthp_ctl &= !CNTx_CTL_ENABLE;
+	crate::write_sysreg!(cnthp_ctl_el2, cnthp_ctl);
 
 	// crate::println!("vttbr_el2 {:x}", rec.common_sysregs.vttbr_el2);
 	// crate::println!("vtcr_el2 {:x}", rec.common_sysregs.vtcr_el2);

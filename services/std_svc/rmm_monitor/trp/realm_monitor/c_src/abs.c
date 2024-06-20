@@ -282,3 +282,6 @@ unsigned long find_next_set_bit(unsigned long bitmap,
 	return ns;
 }
 
+void asm_isb() {
+	isb();
+}

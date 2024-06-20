@@ -10,7 +10,13 @@
 #include <services/rmm_core_manifest.h>
 #include <services/rmmd_svc.h>
 #include <services/trp/platform_trp.h>
+#ifdef PLAT_QEMU
 #include <services/trp/trp_helpers.h>
+#endif
+
+#ifdef PLAT_FVP
+#include <trp_helpers.h>
+#endif
 #include "trp_private.h"
 
 #include <platform_def.h>
@@ -63,10 +69,16 @@ void trp_setup(uint64_t x0,
 			   sizeof(trp_shared_region_start));
 
 	/* Perform early platform-specific setup */
+	#ifdef PLAT_QEMU
 	trp_early_platform_setup_qemu();
-	// trp_early_platform_setup((struct rmm_manifest *)trp_shared_region_start);
+	#endif
+
+	#ifdef PLAT_FVP
+	trp_early_platform_setup((struct rmm_manifest *)trp_shared_region_start);
+	#endif
 }
 
+#ifdef PLAT_QEMU
 int trp_validate_warmboot_args(uint64_t x0, uint64_t x1,
 			       uint64_t x2, uint64_t x3)
 {
@@ -84,6 +96,7 @@ int trp_validate_warmboot_args(uint64_t x0, uint64_t x1,
 
 	return ((x1 | x2 | x3) == 0UL) ? 0 : E_RMM_BOOT_UNKNOWN;
 }
+#endif
 
 extern void rust_printf();
 extern void rust_test_alloc();
@@ -92,43 +105,61 @@ extern void mm_primary_init();
 extern void virt_primary_init();
 extern void init_console();
 extern void init_granule();
-extern unsigned long smc_realm_create(unsigned long rd_addr, unsigned long rlm_para_addr);
+extern unsigned long smc_realm_create(unsigned long rd_addr,
+									  unsigned long rlm_para_addr);
 extern unsigned long smc_realm_destroy(unsigned long rd_addr);
 extern unsigned long smc_realm_activate(unsigned long rd_addr);
-extern unsigned long smc_table_create(unsigned long tbl_addr,
-			     unsigned long rd_addr,
-			     unsigned long map_addr,
-			     unsigned long level);
+extern unsigned long smc_table_create(unsigned long tbl_addr, unsigned long rd_addr,
+									  unsigned long map_addr, unsigned long level);
+extern unsigned long smc_table_create_compact(unsigned long rd_addr,
+											  unsigned long args_addr,
+											  unsigned long size);
+
 extern unsigned long smc_granule_delegate(unsigned long addr);
+extern unsigned long smc_granule_delegate_compact(unsigned long args_addr,
+											      unsigned long seg_cnt);
 extern unsigned long smc_granule_undelegate(unsigned long addr);
-extern unsigned long smc_table_destroy(unsigned long rtt_addr,
-				unsigned long rd_addr,
-				unsigned long map_addr,
-				unsigned long level);
-extern unsigned long smc_data_map(unsigned long rd_addr,
-			   unsigned long map_addr);
-extern unsigned long smc_data_unmap(unsigned long rd_addr,
-			     unsigned long map_addr);
-extern unsigned long smc_data_create(unsigned long data_addr,
-			      unsigned long rd_addr,
-			      unsigned long src_addr,
-			      unsigned long map_addr);
-extern unsigned long smc_data_destroy(unsigned long map_addr,
-			       unsigned long rd_addr);
+extern unsigned long smc_table_destroy(unsigned long rtt_addr, unsigned long rd_addr,
+									   unsigned long map_addr, unsigned long level);
+extern unsigned long smc_data_map(unsigned long rd_addr, unsigned long map_addr);
+extern unsigned long smc_data_unmap(unsigned long rd_addr, unsigned long map_addr);
+extern unsigned long smc_data_create(unsigned long data_addr, unsigned long rd_addr,
+			      					 unsigned long src_addr, unsigned long map_addr);
+extern unsigned long smc_data_create_compact(unsigned long rd_addr,
+											 unsigned long map_addr,
+				      						 unsigned long src_seg_cnt,
+					    					 unsigned long src_args_addr,
+											 unsigned long dst_seg_cnt,
+					    					 unsigned long dst_args_addr);
+extern unsigned long smc_data_destroy(unsigned long map_addr, unsigned long rd_addr);
+extern unsigned long smc_data_destroy_compact(unsigned long rd_addr,
+											 unsigned long map_addr,
+											 unsigned long segment_cnt,
+											 unsigned long args_addr);
+extern unsigned long smc_data_destroy_shared_compact(unsigned long rd_addr,
+													 unsigned long map_addr,
+													 unsigned long size);
 extern unsigned long smc_data_create_unknown(unsigned long data_addr,
-				      unsigned long rd_addr,
-				      unsigned long map_addr);
+											 unsigned long rd_addr,
+											 unsigned long map_addr);
+extern unsigned long smc_data_create_unknown_compact(unsigned long rd_addr,
+													 unsigned long map_addr,
+													 unsigned long segment_cnt,
+													 unsigned long args_addr);
 extern unsigned long smc_data_create_shared(unsigned long data_addr,
-				      unsigned long rd_addr,
-				      unsigned long map_addr);
+											unsigned long rd_addr,
+											unsigned long map_addr);
+extern unsigned long smc_data_create_shared_compact(unsigned long rd_addr,
+													unsigned long map_addr,
+													unsigned long segment_cnt,
+													unsigned long args_addr);
 extern unsigned long smc_data_dispose(unsigned long rd_addr, unsigned long rec_addr);
 extern unsigned long smc_rec_create(unsigned long rec_addr,
-			     unsigned long rd_addr,
-			     unsigned long mpidr,
-			     unsigned long rec_params_addr);
+									unsigned long rd_addr,
+									unsigned long mpidr,
+									unsigned long rec_params_addr);
 extern unsigned long smc_rec_destroy(unsigned long rec_addr);
-extern unsigned long smc_rec_run(unsigned long rec_addr,
-			  unsigned long rec_run_addr);
+extern unsigned long smc_rec_run(unsigned long rec_addr, unsigned long rec_run_addr);
 
 void print_info(const char *fmt, ...) {
 	va_list args;
@@ -145,6 +176,7 @@ void test_secondary() {
 	INFO("secondary boot here \n");
 }
 
+#ifdef PLAT_QEMU
 /*******************************************************************************
  * Setup function for TRP.
  ******************************************************************************/
@@ -156,6 +188,7 @@ void trp_setup_qemu(void)
 	trp_plat_arch_setup();
 	NOTICE("TRP: trp_plat_arch_setup\n");
 }
+#endif
 
 /* Main function for TRP */
 void trp_main(void)
@@ -192,11 +225,13 @@ void trp_main(void)
 	print_info("hello world 8\n");
 }
 
+#ifdef PLAT_QEMU
 void trp_enable_mmu(void)
 {
 	int linear_id = plat_my_core_pos();
 	trp_plat_arch_enable_mmu(linear_id);
 }
+#endif
 
 /*******************************************************************************
  * Returning RMI version back to Normal World
@@ -219,6 +254,20 @@ static void trp_asc_mark_realm(unsigned long long x1,
 						0UL, 0UL, 0UL, 0UL, 0UL, 0UL));	
 	smc_granule_delegate(x1);
 
+	if (smc_ret->x[0] != 0ULL) {
+		ERROR("Granule transition from NON-SECURE type to REALM type "
+			"failed 0x%llx\n", smc_ret->x[0]);
+	}
+}
+
+/*******************************************************************************
+ * Transitioning granule of NON-SECURE type to REALM type
+ ******************************************************************************/
+static void trp_asc_mark_realm_compact(unsigned long long x1,
+									   unsigned long long x2,
+									   struct trp_smc_result *smc_ret)
+{
+	smc_granule_delegate_compact(x1, x2);
 	if (smc_ret->x[0] != 0ULL) {
 		ERROR("Granule transition from NON-SECURE type to REALM type "
 			"failed 0x%llx\n", smc_ret->x[0]);
@@ -283,8 +332,9 @@ static void trp_realm_activate(unsigned long long x1,
 /*******************************************************************************
  * create realm page table
  ******************************************************************************/
-static void trp_table_create(unsigned long long x1, unsigned long long x2, unsigned long long x3, unsigned long long x4, 
-					struct trp_smc_result *smc_ret)
+static void trp_table_create(unsigned long long x1, unsigned long long x2,
+							 unsigned long long x3, unsigned long long x4, 
+							 struct trp_smc_result *smc_ret)
 {
 	smc_ret->x[0] = smc_table_create(x1, x2, x3, x4);
 
@@ -294,10 +344,24 @@ static void trp_table_create(unsigned long long x1, unsigned long long x2, unsig
 }
 
 /*******************************************************************************
+ * create realm page tables
+ ******************************************************************************/
+static void trp_table_create_compact(unsigned long long x1, unsigned long long x2,
+							 		 unsigned long long x3, struct trp_smc_result *smc_ret)
+{
+	smc_ret->x[0] = smc_table_create_compact(x1, x2, x3);
+
+	if (smc_ret->x[0] != 0ULL) {
+		ERROR("Create realm page table is failed 0x%llx\n", smc_ret->x[0]);
+	}
+}
+
+/*******************************************************************************
  * destroy realm page table
  ******************************************************************************/
-static void trp_table_destroy(unsigned long long x1, unsigned long long x2, unsigned long long x3, unsigned long long x4, 
-					struct trp_smc_result *smc_ret)
+static void trp_table_destroy(unsigned long long x1, unsigned long long x2,
+							  unsigned long long x3, unsigned long long x4, 
+							  struct trp_smc_result *smc_ret)
 {
 	smc_ret->x[0] = smc_table_destroy(x1, x2, x3, x4);
 
@@ -335,10 +399,26 @@ static void trp_data_unmap(unsigned long long x1, unsigned long long x2,
 /*******************************************************************************
  * Create a data page and map to the rtt, before data_map
  ******************************************************************************/
-static void trp_data_create(unsigned long long x1, unsigned long long x2, unsigned long long x3, unsigned long long x4, 
-					struct trp_smc_result *smc_ret)
+static void trp_data_create(unsigned long long x1, unsigned long long x2,
+							unsigned long long x3, unsigned long long x4, 
+							struct trp_smc_result *smc_ret)
 {
 	smc_ret->x[0] = smc_data_create(x1, x2, x3, x4);
+
+	if (smc_ret->x[0] != 0ULL) {
+		ERROR("Create data page is failed 0x%llx\n", smc_ret->x[0]);
+	}
+}
+
+/*******************************************************************************
+ * Create multiple continous data pages and map to the rtt
+ ******************************************************************************/
+static void trp_data_create_compact(unsigned long long x1, unsigned long long x2,
+									unsigned long long x3, unsigned long long x4, 
+									unsigned long long x5, unsigned long long x6,
+									struct trp_smc_result *smc_ret)
+{
+	smc_ret->x[0] = smc_data_create_compact(x1, x2, x3, x4, x5, x6);
 
 	if (smc_ret->x[0] != 0ULL) {
 		ERROR("Create data page is failed 0x%llx\n", smc_ret->x[0]);
@@ -349,7 +429,7 @@ static void trp_data_create(unsigned long long x1, unsigned long long x2, unsign
  * Destroy a data page and clear the pte entry, after data_unmap
  ******************************************************************************/
 static void trp_data_destroy(unsigned long long x1, unsigned long long x2, 
-					struct trp_smc_result *smc_ret)
+							 struct trp_smc_result *smc_ret)
 {
 	smc_ret->x[0] = smc_data_destroy(x1, x2);
 
@@ -359,12 +439,57 @@ static void trp_data_destroy(unsigned long long x1, unsigned long long x2,
 }
 
 /*******************************************************************************
+ * Destroy multiple data pages and clear the pte entry
+ ******************************************************************************/
+static void trp_data_destroy_compact(unsigned long long x1, unsigned long long x2,
+									 unsigned long long x3, unsigned long long x4,
+									 struct trp_smc_result *smc_ret)
+{
+	smc_ret->x[0] = smc_data_destroy_compact(x1, x2, x3, x4);
+
+	if (smc_ret->x[0] != 0ULL) {
+		ERROR("Destroy data page is failed 0x%llx\n", smc_ret->x[0]);
+	}
+}
+
+/*******************************************************************************
+ * Destroy multiple NS data pages and clear the pte entry
+ ******************************************************************************/
+static void trp_data_destroy_shared_compact(unsigned long long x1,
+											unsigned long long x2,
+									 		unsigned long long x3,
+									 		struct trp_smc_result *smc_ret)
+{
+	smc_ret->x[0] = smc_data_destroy_shared_compact(x1, x2, x3);
+
+	if (smc_ret->x[0] != 0ULL) {
+		ERROR("Destroy data page is failed 0x%llx\n", smc_ret->x[0]);
+	}
+}
+
+
+/*******************************************************************************
  * Create an unknown data page and map to the rtt, before data_map
  ******************************************************************************/
-static void trp_data_create_unknown(unsigned long long x1, unsigned long long x2, unsigned long long x3, 
-					struct trp_smc_result *smc_ret)
+static void trp_data_create_unknown(unsigned long long x1, unsigned long long x2,
+									unsigned long long x3, 
+									struct trp_smc_result *smc_ret)
 {
 	smc_ret->x[0] = smc_data_create_unknown(x1, x2, x3);
+
+	if (smc_ret->x[0] != 0ULL) {
+		ERROR("Create unknown data page is failed 0x%llx\n", smc_ret->x[0]);
+	}
+}
+
+/*******************************************************************************
+ * Create multiple continous data pages and map them to the rtt
+ ******************************************************************************/
+static void trp_data_create_unknown_compact(unsigned long long x1, unsigned long long x2,
+											unsigned long long x3, unsigned long long x4,
+											struct trp_smc_result *smc_ret)
+{
+	smc_ret->x[0] = smc_data_create_unknown_compact(x1, x2, x3, x4);
 
 	if (smc_ret->x[0] != 0ULL) {
 		ERROR("Create unknown data page is failed 0x%llx\n", smc_ret->x[0]);
@@ -387,8 +512,8 @@ static void trp_data_dispose(unsigned long long x1, unsigned long long x2,
 /*******************************************************************************
  * Create an unknown data page and map to the rtt, before data_map
  ******************************************************************************/
-static void trp_data_create_shared(unsigned long long x1, unsigned long long x2, unsigned long long x3, 
-					struct trp_smc_result *smc_ret)
+static void trp_data_create_shared(unsigned long long x1, unsigned long long x2,
+								   unsigned long long x3, struct trp_smc_result *smc_ret)
 {
 	smc_ret->x[0] = smc_data_create_shared(x1, x2, x3);
 	if (smc_ret->x[0] != 0ULL) {
@@ -397,10 +522,24 @@ static void trp_data_create_shared(unsigned long long x1, unsigned long long x2,
 }
 
 /*******************************************************************************
+ * Create multiple continous data pages and map to the rtt
+ ******************************************************************************/
+static void trp_data_create_shared_compact(unsigned long long x1, unsigned long long x2,
+										   unsigned long long x3, unsigned long long x4,
+										   struct trp_smc_result *smc_ret)
+{
+	smc_ret->x[0] = smc_data_create_shared_compact(x1, x2, x3, x4);
+	if (smc_ret->x[0] != 0ULL) {
+		ERROR("Create shared data page is failed 0x%llx\n", smc_ret->x[0]);
+	}
+}
+
+/*******************************************************************************
  * Create realm context with initial register value
  ******************************************************************************/
-static void trp_rec_create(unsigned long long x1, unsigned long long x2, unsigned long long x3, unsigned long long x4, 
-					struct trp_smc_result *smc_ret)
+static void trp_rec_create(unsigned long long x1, unsigned long long x2,
+						   unsigned long long x3, unsigned long long x4, 
+						   struct trp_smc_result *smc_ret)
 {
 	smc_ret->x[0] = smc_rec_create(x1, x2, x3, x4);
 
@@ -439,10 +578,10 @@ static void trp_rec_run(unsigned long long x1, unsigned long long x2,
  * Main RMI SMC handler function
  ******************************************************************************/
 void trp_rmi_handler(unsigned long fid,
-		     unsigned long long x1, unsigned long long x2,
-		     unsigned long long x3, unsigned long long x4,
-		     unsigned long long x5, unsigned long long x6,
-		     struct trp_smc_result *smc_ret)
+					 unsigned long long x1, unsigned long long x2,
+					 unsigned long long x3, unsigned long long x4,
+					 unsigned long long x5, unsigned long long x6,
+					 struct trp_smc_result *smc_ret)
 {
 	/* Not used in the current implementation */
 	(void)x2;
@@ -471,7 +610,10 @@ void trp_rmi_handler(unsigned long fid,
 		trp_realm_activate(x1, smc_ret);
 		break;
 	case RMI_RMM_TABLE_CREATE:
-		trp_table_create(x1,x2,x3,x4, smc_ret);
+		trp_table_create(x1, x2, x3, x4, smc_ret);
+		break;
+	case RMI_RMM_TABLE_CREATE_COMPACT:
+		trp_table_create_compact(x1, x2, x3, smc_ret);
 		break;
 	case RMI_RMM_TABLE_DESTROY:
 		trp_table_destroy(x1, x2, x3, x4, smc_ret);
@@ -485,8 +627,17 @@ void trp_rmi_handler(unsigned long fid,
 	case RMI_RMM_DATA_CREATE:
 		trp_data_create(x1, x2, x3, x4, smc_ret);
 		break;
+	case RMI_RMM_DATA_CREATE_COMPACT:
+		trp_data_create_compact(x1, x2, x3, x4, x5, x6, smc_ret);
+		break;
 	case RMI_RMM_DATA_DESTROY:
 		trp_data_destroy(x1, x2, smc_ret);
+		break;
+	case RMI_RMM_DATA_DESTROY_COMPACT:
+		trp_data_destroy_compact(x1, x2, x3, x4,smc_ret);
+		break;
+	case RMI_RMM_DATA_DESTROY_SHARED_COMPACT:
+		trp_data_destroy_shared_compact(x1, x2, x3, smc_ret);
 		break;
 	case RMI_RMM_REC_CREATE:
 		trp_rec_create(x1, x2, x3, x4, smc_ret);
@@ -500,11 +651,20 @@ void trp_rmi_handler(unsigned long fid,
 	case RMI_RMM_DATA_CREATE_UNKNOWN:
 		trp_data_create_unknown(x1, x2, x3, smc_ret);
 		break;
+	case RMI_RMM_DATA_CREATE_UNKNOWN_COMPACT:
+		trp_data_create_unknown_compact(x1, x2, x3, x4, smc_ret);
+		break;
 	case RMI_RMM_DATA_DISPOSE:
 		trp_data_dispose(x1, x2, smc_ret);
 		break;
 	case RMI_RMM_MAP_NS:
 		trp_data_create_shared(x1, x2, x3, smc_ret);
+		break;
+	case RMI_RMM_MAP_NS_COMPACT:
+		trp_data_create_shared_compact(x1, x2, x3, x4, smc_ret);
+		break;
+	case RMI_RMM_GRANULE_DELEGATE_COMPACT:
+		trp_asc_mark_realm_compact(x1, x2, smc_ret);
 		break;
 	default:
 		ERROR("Invalid SMC code to %s, FID %lx\n", __func__, fid);

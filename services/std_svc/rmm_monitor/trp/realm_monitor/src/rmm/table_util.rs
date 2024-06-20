@@ -8,6 +8,7 @@ use crate::rmm::granule_util::{
     GRANULE_SIZE,
     GranuleUtil,
     GranuleState,
+    idx_to_addr,
 };
 
 use crate::rmm::rmm_util::{
@@ -513,10 +514,10 @@ pub fn table_destroy_aux(g_llt_id: u32, g_tbl_id: u32, ll_table: &mut Page, leve
         }
         ll_table.entry[index] = new_pgte;
         
-         GranuleUtil::put_granule(g_tbl_id);
-         GranuleUtil::granule_set_rd(g_tbl_id, NR_GRANULES as u32);
-         unsafe {memzero(table_ptr as usize, GRANULE_SIZE);}
-         GranuleUtil::granule_set_state(g_tbl_id, GranuleState::GranuleStateDelegated);
+        GranuleUtil::put_granule(g_tbl_id);
+        GranuleUtil::granule_set_rd(g_tbl_id, NR_GRANULES as u32);
+        unsafe {memzero(table_ptr as usize, GRANULE_SIZE);}
+        GranuleUtil::granule_set_state(g_tbl_id, GranuleState::GranuleStateDelegated);    
     }
     else {
         crate::println!("ERROR: table_destroy_aux: gcnt is {:x} table_id {:x}\n", gcnt, g_tbl_id);
@@ -849,11 +850,13 @@ impl TableUtil {
                         //clear the granule state and value
                         if  map_addr >= SHARED_ADDR_BEGIN && map_addr < SHARED_ADDR_END {
                             // crate::println!("data_destroy: destroy shared memory {:x} !!!!!!!!!!!!", map_addr);
+                            GranuleUtil::granule_set_state(data_id, GranuleState::GranuleStateNs);
                         }
                         else {
                             granule_map_zero(data_id, BufferSlot::SLOT_DELEGATED);
+                            GranuleUtil::granule_set_state(data_id, GranuleState::GranuleStateDelegated);
                         }
-                        GranuleUtil::granule_set_state(data_id, GranuleState::GranuleStateDelegated);
+
                         GranuleUtil::unlock_granule(data_id);
                     }
                     Err(_) => {
@@ -929,7 +932,7 @@ impl TableUtil {
             else {
                 pte_val = IPA_STATE_TO_PTE(IpaState:: IpaStateAbsent) | data_addr;
                 ll_table.entry[index] = pte_val;
-                crate::println!("data_create_shared_op pte_val {:x}", pte_val);
+                // crate::println!("data_create_shared_op pte_val {:x}", pte_val);
                 GranuleUtil::get_granule(g_llt_id);
             }
             

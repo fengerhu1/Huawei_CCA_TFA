@@ -277,6 +277,8 @@ pub enum SyscallNumber {
     __NR_lseek = 62,
     __NR_readv = 65,
     __NR_writev = 66,
+    __NR_clock_gettime = 113,
+    __NR_gettimeofday = 169,
     __NR_brk = 214,
     __NR_mmap = 222,
     // Add  other syscall number if needed
@@ -293,6 +295,8 @@ impl From<i32> for SyscallNumber {
             62 => SyscallNumber::__NR_lseek,
             65 => SyscallNumber::__NR_readv,
             66 => SyscallNumber::__NR_writev,
+            113 => SyscallNumber::__NR_clock_gettime,
+            169 => SyscallNumber::__NR_gettimeofday,
             214 => SyscallNumber::__NR_brk,
             222 => SyscallNumber::__NR_mmap,
             _ => SyscallNumber::__NR_invalid,

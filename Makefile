@@ -329,6 +329,15 @@ else
         LOG_LEVEL	:=	20
 endif
 
+# Platform flags
+ifeq (${PLAT}, qemu)
+    CFLAGS += -DPLAT_QEMU
+    ASFLAGS += -DPLAT_QEMU
+else ifeq (${PLAT}, fvp)
+    CFLAGS += -DPLAT_FVP
+    ASFLAGS += -DPLAT_FVP
+endif
+
 # Default build string (git branch and commit)
 ifeq (${BUILD_STRING},)
         BUILD_STRING  :=  $(shell git describe --always --dirty --tags 2> /dev/null)

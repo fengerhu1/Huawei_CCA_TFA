@@ -97,13 +97,14 @@ trp_head:
 	b	trp_handler
 
 warm_boot:
-	mov	x0, x20
-	mov	x1, x21
-	mov	x2, x22
-	mov	x3, x23
-	bl	trp_validate_warmboot_args
-	cbnz	x0, trp_panic /* Failed to validate warmboot args */
-
+	#ifdef PLAT_QEMU
+		mov	x0, x20
+		mov	x1, x21
+		mov	x2, x22
+		mov	x3, x23
+		bl	trp_validate_warmboot_args
+		cbnz	x0, trp_panic /* Failed to validate warmboot args */
+	#endif
 1:
 	mov x0, sp
 	ldr x1, =0x100

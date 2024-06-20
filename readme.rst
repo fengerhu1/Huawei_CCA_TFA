@@ -25,6 +25,111 @@ with Armv7-A and Armv8-A TrustZone technology.
 Users are encouraged to do their own security validation, including penetration
 testing, on any secure world code derived from TF-A.
 
+Compilation Guide
+-----------------
+
+Common Prerequisites
+^^^^^^^^^^^^^^^^^^^^
+
+- `cca_build_v7` docker image
+
+Now the repo is available for `qemu` and `fvp` platforms.
+
+QEMU
+^^^^
+
+Prerequisites
+~~~~~~~~~~~~~
+
+docker_cmd.sh
+^^^^^^^^^^^^^
+
+.. code-block:: bash
+
+    #!/bin/bash
+    # run docker 
+    if [[ $1 == *"docker"* ]]; then
+        echo "Run: run docker"
+        docker run -p 54340:54340 -v $(pwd):/home/mount_dir -w /home/mount_dir --rm -it cca_build_v7:latest bash
+        exit 0
+   
+
+
+source.sh
+^^^^^^^^^
+
+.. code-block:: bash
+
+    export CROSS_COMPILE=aarch64-none-elf-
+    export PATH=/home/mount_dir/toolchains/gcc-arm-10.3-2021.07-x86_64-aarch64-none-elf/bin:$PATH
+
+tfa.sh
+^^^^^^
+
+.. code-block:: bash
+
+    cd trusted-firmware-a/services/std_svc/rmm_monitor/trp/realm_monitor
+    cmake -DPLAT=qemu
+    make -C .
+    cd ../../../../../..
+    source source.sh
+    cd trusted-firmware-a
+    rm -r build/qemu
+    make CROSS_COMPILE=aarch64-none-elf- ARCH=aarch64 PLAT=qemu ARM_DISABLE_TRUSTED_WDOG=1 ENABLE_RME=1 DEBUG=1 BL33=../edk2/Build/ArmVirtQemuKernel-AARCH64/DEBUG_GCC5/FV/QEMU_EFI.fd all fip
+
+
+Build edk2
+~~~~~~~~~~
+
+You need to build edk2 at the parent directory of TF-A repo.
+
+.. code-block:: bash
+
+    git clone https://github.com/tianocore/edk2.git
+    cd edk2
+    git submodule update --init
+    sudo ./docker_cmd.sh docker
+        update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+        make -C BaseTools
+        source edksetup.sh
+        export GCC5_AARCH64_PREFIX=/home/mount_dir/toolchains/aarch64/bin/aarch64-linux-gnu-
+        build -a AARCH64 -t GCC5 -p ArmVirtPkg/ArmVirtQemuKernel.dsc
+        exit
+
+Build TF-A
+~~~~~~~~~~
+
+Make sure you are in the docker container.
+
+.. code-block:: bash
+
+    ./docker_cmd docker
+
+Then you can build TF-A with the following command.
+
+.. code-block:: bash
+
+    ./tfa.sh
+
+FVP
+^^^
+
+You can just build TF-A with the `fvp.mk` in the `build` directory of rme repo.
+
+First you need to enter docker container.
+Run the following command in the root of rme repo to enter docker container.
+
+.. code-block:: bash
+
+    ./docker_cmd docker
+
+Then you can build TF-A with the following command.
+
+.. code-block:: bash
+
+    cd build
+    make
+
 More Info and Documentation
 ---------------------------
 

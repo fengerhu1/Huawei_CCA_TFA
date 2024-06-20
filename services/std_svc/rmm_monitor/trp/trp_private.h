@@ -8,7 +8,13 @@
 #define TRP_PRIVATE_H
 
 #include <services/rmmd_svc.h>
+#ifdef PLAT_QEMU
 #include <services/trp/trp_helpers.h>
+#endif
+
+#ifdef PLAT_FVP
+#include <trp_helpers.h>
+#endif
 
 /* Definitions for RMM-EL3 Interface ABI VERSION */
 #define TRP_RMM_EL3_ABI_VERS_MAJOR	RMM_EL3_IFC_VERSION_MAJOR
@@ -132,6 +138,19 @@
 
 #define RMI_RMM_NUM_CALLS		SMC64_RMI_FID(U(20))
 
+#define RMI_RMM_DATA_CREATE_UNKNOWN_COMPACT		SMC64_RMI_FID(U(21))
+
+#define RMI_RMM_MAP_NS_COMPACT			SMC64_RMI_FID(U(22))
+
+#define RMI_RMM_DATA_CREATE_COMPACT			SMC64_RMI_FID(U(23))
+
+#define RMI_RMM_DATA_DESTROY_COMPACT		SMC64_RMI_FID(U(24))
+
+#define RMI_RMM_DATA_DESTROY_SHARED_COMPACT		SMC64_RMI_FID(U(25))
+
+#define RMI_RMM_TABLE_CREATE_COMPACT	SMC64_RMI_FID(U(26))
+
+#define RMI_RMM_GRANULE_DELEGATE_COMPACT	SMC64_RMI_FID(U(27))
 
 /* Definitions for RMI VERSION */
 #define RMI_ABI_VERSION_MAJOR		U(0x0)

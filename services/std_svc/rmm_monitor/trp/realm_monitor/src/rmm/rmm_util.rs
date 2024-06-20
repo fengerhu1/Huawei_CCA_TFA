@@ -4,6 +4,7 @@ use crate::rmm::granule_util::{
     GranuleUtil,
     ALIGNED,
     addr_to_idx,
+    idx_to_addr,
     GRANULE_SIZE,
     NR_GRANULES,
     ERROR_MAX,
@@ -76,15 +77,20 @@ extern "C"{
  */
 pub fn granule_map(rlm_para_addr: usize, realm_granule: Granule, slot: BufferSlot) -> usize {
     let idx = addr_to_idx(rlm_para_addr);
-    // For qemu
-    let addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    // let addr;
-    // if idx > (NR_GRANULES/2) {
-    //     addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
-    // }
-    // else {// For tf-a-test
-    //     addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    // }
+    let addr;
+    if cfg!(feature = "platform_qemu") {
+        addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+    } else if cfg!(feature = "platform_fvp") {
+        if idx > (NR_GRANULES/2) {
+            addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
+        }
+        else {// For tf-a-test
+            addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+        }
+    } else {
+        addr = 0;
+        crate::println!("ERROR: granule_map is failed: invalied platform");
+    }
     let ns=(realm_granule.state == GranuleState::GranuleStateNs);
     let ret: usize;
 
@@ -103,14 +109,20 @@ pub fn granule_map_with_id(idx: usize, slot: BufferSlot) -> usize {
         crate::println!("ERROR: granule_map_with_id is failed: invalied idx");
     }
     // cal the physical address of the mapped granule
-    let addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    // let addr;
-    // if idx > (NR_GRANULES/2) {
-    //     addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
-    // }
-    // else {// For tf-a-test
-    //     addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    // }
+    let addr;
+    if cfg!(feature = "platform_qemu") {
+        addr = MEM0_PHYS + (idx * GRANULE_SIZE);
+    } else if cfg!(feature = "platform_fvp") {
+        if idx > (NR_GRANULES/2) {
+            addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
+        }
+        else {// For tf-a-test
+            addr = MEM0_PHYS + (idx * GRANULE_SIZE);
+        }
+    } else {
+        addr = 0;
+        crate::println!("ERROR: granule_map_with_id is failed: invalied platform");
+    }
     let state = GranuleUtil::acquire_granule_state(idx as u32);
     let ns=(state == GranuleState::GranuleStateNs);
     let ret: usize;
@@ -126,20 +138,24 @@ pub fn granule_map_with_id(idx: usize, slot: BufferSlot) -> usize {
  * \brief Map the granule with the granule id and state, and return the corresponding va
  */
 pub fn granule_map_with_id_state(idx: usize, state: GranuleState, slot: BufferSlot) -> usize {
-    crate::dprintln!("Debug: granule_map_with_id_state idx {:x}, state {:?}, bufferslot {:?}", idx, state, slot);
     if idx > NR_GRANULES {
-        crate::println!("ERROR: granule_map_with_id is failed: invalied idx");
+        crate::println!("ERROR: granule_map_with_id_state is failed: invalied idx");
     }
     // cal the physical address of the mapped granule
-    let addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    // For FVP
-    // if idx > (NR_GRANULES/2) {
-    //     addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
-    // }
-    // else {// For tf-a-test
-    //     addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
-    // }
-    crate::dprintln!("Debug: granule_map_with_id_state addr {:x}", addr);
+    let addr;
+    if cfg!(feature = "platform_qemu") {
+        addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+    } else if cfg!(feature = "platform_fvp") {
+        if idx > (NR_GRANULES/2) {
+            addr = MEM1_PHYS + (idx-(NR_GRANULES/2))*GRANULE_SIZE;
+        }
+        else {// For tf-a-test
+            addr =  MEM0_PHYS + (idx * GRANULE_SIZE);
+        }
+    } else {
+        addr = 0;
+        crate::println!("ERROR: granule_map_with_id_state is failed: invalied platform");
+    }
     let ns=(state == GranuleState::GranuleStateNs);
     let ret: usize;
 
@@ -173,7 +189,7 @@ impl RmmUtil {
                 let debug_para = ((rlm_para_addr as usize) + 0x200000000) as *const RealmParams; 
                 let tmp_RealmParams = granule_map(rlm_para_addr, granule, BufferSlot::SLOT_INPUT) as *mut RealmParams;
                 // acquire the global v_percpu_list
-                let mut v_percpu_list = VPERCPU_LOCK.lock();                
+                let mut v_percpu_list = VPERCPU_LOCK.lock(); 
                 
                 // dereference a raw pointer
                 // copy the realm_parameter into v_percpu
@@ -343,7 +359,6 @@ impl RmmUtil {
     }
     
     pub fn realm_create_ops() {
-        crate::dprintln!("Debug: realm_create_ops");
         let v_percpu_list = VPERCPU_LOCK.lock();
 
         let g_rd_id = v_percpu_list[crate::cpuid!()].locked_granules[0].id;
@@ -356,7 +371,7 @@ impl RmmUtil {
         drop(v_percpu_list);
 
         GranuleUtil::realm_create_granule_ops1(g_rd_id, g_table_id, g_rec_list_id);
-        crate::dprintln!("Debug: realm_create_ops 2");
+
         let rd_ptr = granule_map_with_id_state(g_rd_id as usize, g_rd_state, BufferSlot::SLOT_RD) as *mut Rd;
         let rd = unsafe {&mut (*rd_ptr)};
 
@@ -397,6 +412,13 @@ impl RmmUtil {
     pub fn granule_delegate_ops(idx: u32, addr: usize) {
         GranuleUtil::granule_set_state(idx, GranuleState::GranuleStateDelegated);
         granule_map_zero(idx, BufferSlot::SLOT_DELEGATED);
+        // We need to call smc call to el3 monitor to delegate the granule
+        // We lock the delegate granule before
+        GranuleUtil::unlock_granule(idx);
+    }
+
+    pub fn granule_delegate_without_clear_ops(idx: u32, addr: usize) {
+        GranuleUtil::granule_set_state(idx, GranuleState::GranuleStateDelegated);
         // We need to call smc call to el3 monitor to delegate the granule
         // We lock the delegate granule before
         GranuleUtil::unlock_granule(idx);
